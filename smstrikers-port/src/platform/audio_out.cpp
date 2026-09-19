@@ -2,6 +2,7 @@
 // https://github.com/TwilitRealm/dusklight).
 
 #include "port/audio.h"
+#include "port/custom_sfx.h" 
 
 #if defined(PORT_USE_AURORA)
 
@@ -206,6 +207,8 @@ void PortAudioUpdate(void) {
         void* pcm = salPortNextBuffer();
         if (pcm == nullptr)
             break;
+
+PortCustomSFXMix(static_cast<short*>(pcm), bufBytes / (kChannels * sizeof(int16_t)));
 
         if (!s_everNonSilent) {
             const int16_t* p = static_cast<const int16_t*>(pcm);
