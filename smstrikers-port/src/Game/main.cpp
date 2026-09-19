@@ -29,6 +29,7 @@ extern "C" void PortDebugFrame(void);   // PORT: defined in Game.cpp
 #include "port/determinism.h"
 #include "port/config.h"
 #include "port/texture_packs.h"
+#include "port/custom_sfx.h"
 #include "Game/Audio/AudioStream.h"
 #include "Game/Sys/audio.h"
 #include "Game/Sys/clock.h"
@@ -817,6 +818,7 @@ int main(int argc, char* argv[])
         AuroraSetViewportPolicy(AURORA_VIEWPORT_FIT);
 
         PortTexturesInit(info.userPath); // PORT: texture packs
+	PortCustomSFXInit(); // PORT: sfx/*.wav drop-in replacements
 
         // Aurora's PAD reads SDL gamepads and reports PAD_ERR_NO_CONTROLLER when there is neither a gamepad nor a keyboard binding.
         PortInstallKeyboardBindings();
