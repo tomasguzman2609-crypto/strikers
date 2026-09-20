@@ -1913,4 +1913,4 @@ void KillSlideTackleTrail(cCharacter* pCharacter)
     const EffectsGroup* pGroup = fxGetGroup("slide_tackle_trail");
     pCharacter->EndEffect(pGroup);
 }
-}
+
