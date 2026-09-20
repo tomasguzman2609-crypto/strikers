@@ -617,7 +617,7 @@ void Audio::AudioEventHandler(Event* pEvent, void* data)
         Audio::eCharSFX bowserHowlSFX[3] = {
             (Audio::eCharSFX)0x57, (Audio::eCharSFX)0x58, (Audio::eCharSFX)0x59
         };
-        Audio::eCharSFX chosenBowserRoar = bowserHowlSFX[nlRandom(3, &nlDefaultSeed)]; if (chosenBowserRoar != (Audio::eCharSFX)0x58 || !PortCustomSFXPlay("SFXCHAR_BOWSER_Activate")) { pBowser->PlaySFX(chosenBowserRoar, (PosUpdateMethod)1, -1.0f, true);}
+        Audio::eCharSFX chosenBowserRoar = bowserHowlSFX[nlRandom(3, &nlDefaultSeed)]; if (Audio::eCharSFX chosenBowserRoar = bowserHowlSFX[nlRandom(3, &nlDefaultSeed)]; if (!PortCustomSFXPlay("SFXCHAR_BOWSER_Activate")) { pBowser->PlaySFX(chosenBowserRoar, (PosUpdateMethod)1, -1.0f, true);}
         break;
     }
 
