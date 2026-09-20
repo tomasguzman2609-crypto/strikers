@@ -604,7 +604,7 @@ void Audio::AudioEventHandler(Event* pEvent, void* data)
             (Audio::eWorldSFX)0xCE, 100.0f, -1.0f, true, 100.0f);
         break;
 
-    case 96:
+           case 96:
     {
         pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
         pBowser->m_pCharacterSFX->Stop((Audio::eCharSFX)0x57, cGameSFX::SFX_STOP_FIRST);
@@ -617,10 +617,16 @@ void Audio::AudioEventHandler(Event* pEvent, void* data)
         Audio::eCharSFX bowserHowlSFX[3] = {
             (Audio::eCharSFX)0x57, (Audio::eCharSFX)0x58, (Audio::eCharSFX)0x59
         };
-        Audio::eCharSFX chosenBowserRoar = bowserHowlSFX[nlRandom(3, &nlDefaultSeed)]; if (Audio::eCharSFX chosenBowserRoar = bowserHowlSFX[nlRandom(3, &nlDefaultSeed)]; if (!PortCustomSFXPlay("SFXCHAR_BOWSER_Activate")) { pBowser->PlaySFX(chosenBowserRoar, (PosUpdateMethod)1, -1.0f, true);}
+        Audio::eCharSFX chosenBowserRoar = bowserHowlSFX[nlRandom(3, &nlDefaultSeed)];
+        // PORT: sfx/SFXCHAR_BOWSER_Activate.wav always takes over on landing,
+        // regardless of which variant the random pick chose. Falls back to the
+        // original per-variant sound only if no such file was found.
+        if (!PortCustomSFXPlay("SFXCHAR_BOWSER_Activate"))
+        {
+            pBowser->PlaySFX(chosenBowserRoar, (PosUpdateMethod)1, -1.0f, true);
+        }
         break;
     }
-
     case 97:
     {
         pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
