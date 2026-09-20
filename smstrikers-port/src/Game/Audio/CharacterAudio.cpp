@@ -461,9 +461,6 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosU
         ClearFootstepFlags(this, walkSFX, charFootstepSFX[1]);
 
         mCharSFX[sfxType].m_unk_0x40 = true;
-          
-        return 1;
-    }
         walkAtr.SetSoundType(sfxType, true);
         walkAtr.UseStationaryPosVector(mpPhysObj->GetPosition());
         return Play(walkAtr);
