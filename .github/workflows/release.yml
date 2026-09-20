@@ -21,30 +21,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Decides which targets to build. workflow_dispatch + windows_only builds
+  # only Windows; anything else (a tag push, or the box unchecked) builds
+  # everything, exactly like before this option existed.
+  plan:
+    name: plan
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+      run_switch: ${{ steps.set.outputs.run_switch }}
+    steps:
+      - id: set
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.windows_only }}" = "true" ]; then
+            echo 'matrix=[{"name":"windows-x86_64","runner":"windows-2022","archive":"zip"}]' >> "$GITHUB_OUTPUT"
+            echo "run_switch=false" >> "$GITHUB_OUTPUT"
+          else
+            echo 'matrix=[{"name":"macos-arm64","runner":"macos-15","archive":"tar.gz"},{"name":"linux-x86_64","runner":"ubuntu-24.04","archive":"tar.gz"},{"name":"linux-arm64","runner":"ubuntu-24.04-arm","archive":"tar.gz"},{"name":"windows-x86_64","runner":"windows-2022","archive":"zip"}]' >> "$GITHUB_OUTPUT"
+            echo "run_switch=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     name: build (${{ matrix.name }})
+    needs: plan
     runs-on: ${{ matrix.runner }}
-    if: >-
-      github.event_name != 'workflow_dispatch' || !inputs.windows_only ||
-      matrix.name == 'windows-x86_64'
     env:
       STRIKERS_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: macos-arm64
-            runner: macos-15
-            archive: tar.gz
-          - name: linux-x86_64
-            runner: ubuntu-24.04
-            archive: tar.gz
-          - name: linux-arm64
-            runner: ubuntu-24.04-arm
-            archive: tar.gz
-          - name: windows-x86_64
-            runner: windows-2022
-            archive: zip
+        include: ${{ fromJson(needs.plan.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -154,8 +160,9 @@ jobs:
   switch:
     name: build (switch)
     # mesa-switch compiles NVK's Rust for the host architecture.
+    needs: plan
+    if: needs.plan.outputs.run_switch == 'true'
     runs-on: ubuntu-24.04-arm
-    if: github.event_name != 'workflow_dispatch' || !inputs.windows_only
     env:
       STRIKERS_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
     defaults:
