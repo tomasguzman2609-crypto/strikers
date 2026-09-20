@@ -9,8 +9,6 @@
 
 #include "NL/nlMath.h"
 #include "NL/nlSingleton.h"
-#include "port/custom_sfx.h"
-#include <cstring>
 
 extern cTeam* g_pTeams[2];
 
@@ -541,17 +539,6 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosU
     }
 
     mCharSFX[sfxType].m_unk_0x40 = true;
-        // PORT: sfx/SFXCHAR_WARIO_EFFORTS_Electrocute_01.wav always takes over
-    // whenever Wario gets electrocuted, regardless of which of the 3 random
-    // variants the game would have picked. Falls back to the original sound
-    // if no such file was found; every other character is untouched.
-    if (dType == CHAR_DIALOGUE_ELECTROCUTE
-        && mCharSFX[Audio::CHARSFX_EFFORTS_ELECTROCUTE_01].musyxStr != nullptr
-        && std::strcmp(mCharSFX[Audio::CHARSFX_EFFORTS_ELECTROCUTE_01].musyxStr, "SFXCHAR_WARIO_EFFORTS_Electrocute_01") == 0
-        && PortCustomSFXPlay("SFXCHAR_WARIO_EFFORTS_Electrocute_01"))
-    {
-        return 1;
-    }
     sfxAtr.SetSoundType(sfxType, true);
 
     sfxAtr.mf_Volume = fVol;
