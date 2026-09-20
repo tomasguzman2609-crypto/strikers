@@ -29,8 +29,19 @@ struct Clip
 struct Voice
 {
     const Clip* clip = nullptr;
-    size_t framePos = 0; // in frames (sample pairs), not samples
+    double framePos = 0.0; // in frames (sample pairs), not samples; fractional so
+                            // it can track the game's slow-motion timescale below
 };
+
+// PORT: the game slows its own audio down (pitch + speed) during slow-motion
+// moments (Super Strike close-ups, etc.) by driving MusyX's group pitch, not
+// by resampling its output buffer. Our mixer sits after that buffer is
+// already produced, so we approximate the same effect by advancing our own
+// voices at the same fractional rate as the sim's time scale, instead of one
+// output frame per source frame. FixedUpdateTask.cpp exports this pointer
+// (already used by src/platform/overlay.cpp) — 1.0 = normal speed, lower
+// during slow-mo.
+extern "C" float* PortSimTimeScalePtr(void);
 
 std::string g_sfxDir;
 bool g_haveDir = false;
@@ -280,13 +291,13 @@ extern "C" int PortCustomSFXPlay(const char* name)
             if (v.clip == nullptr)
             {
                 v.clip = c;
-                v.framePos = 0;
+                v.framePos = 0.0;
                 return 1;
             }
         }
         // All voices busy: steal the oldest-looking slot (index 0) rather than drop the cue.
         g_voices[0].clip = c;
-        g_voices[0].framePos = 0;
+        g_voices[0].framePos = 0.0;
     }
     return 1;
 }
@@ -296,25 +307,45 @@ extern "C" void PortCustomSFXMix(short* pcm, unsigned int frames)
     if (pcm == nullptr || frames == 0)
         return;
 
+    // Same clamp range the pitch/filter fades in Audio::FadeFilterTo* use in
+    // practice; guards against a stray 0 or a runaway value doing something
+    // silly to playback rate.
+    float scale = 1.0f;
+    if (float* pScale = PortSimTimeScalePtr())
+        scale = *pScale;
+    if (!(scale > 0.05f)) scale = 0.05f; // also catches NaN
+    if (scale > 4.0f) scale = 4.0f;
+
     for (auto& v : g_voices)
     {
         if (v.clip == nullptr)
             continue;
         const std::vector<int16_t>& s = v.clip->samples;
         const size_t total = s.size() / kMixChannels;
-        for (unsigned int i = 0; i < frames && v.framePos < total; i++, v.framePos++)
+        if (total == 0)
         {
+            v.clip = nullptr;
+            continue;
+        }
+        for (unsigned int i = 0; i < frames && v.framePos < (double)total; i++)
+        {
+            const size_t i0 = (size_t)v.framePos;
+            const size_t i1 = (i0 + 1 < total) ? i0 + 1 : i0;
+            const float frac = (float)(v.framePos - (double)i0);
             for (int ch = 0; ch < kMixChannels; ch++)
             {
-                const int32_t mixed = (int32_t)pcm[i * kMixChannels + ch]
-                                       + (int32_t)s[v.framePos * kMixChannels + ch];
+                const float a = (float)s[i0 * kMixChannels + ch];
+                const float b = (float)s[i1 * kMixChannels + ch];
+                const int32_t sample = (int32_t)(a + (b - a) * frac);
+                const int32_t mixed = (int32_t)pcm[i * kMixChannels + ch] + sample;
                 int32_t clamped = mixed;
                 if (clamped > 32767) clamped = 32767;
                 if (clamped < -32768) clamped = -32768;
                 pcm[i * kMixChannels + ch] = (int16_t)clamped;
             }
+            v.framePos += (double)scale;
         }
-        if (v.framePos >= total)
+        if (v.framePos >= (double)total)
             v.clip = nullptr; // done
     }
 }
