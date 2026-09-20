@@ -461,6 +461,17 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosU
         ClearFootstepFlags(this, walkSFX, charFootstepSFX[1]);
 
         mCharSFX[sfxType].m_unk_0x40 = true;
+            // PORT: sfx/SFXCHAR_WARIO_EFFORTS_Electrocute_01.wav takes over whenever the
+    // random pick lands on Wario's own "Electrocute_01" variant. Falls back to
+    // the original sound if no such file was found; every other character's
+    // electrocution reaction, and Wario's other two variants, are untouched.
+    if (sfxType == Audio::CHARSFX_EFFORTS_ELECTROCUTE_01
+        && mCharSFX[sfxType].musyxStr != nullptr
+        && std::strcmp(mCharSFX[sfxType].musyxStr, "SFXCHAR_WARIO_EFFORTS_Electrocute_01") == 0
+        && PortCustomSFXPlay("SFXCHAR_WARIO_EFFORTS_Electrocute_01"))
+    {
+        return 1;
+    }
         walkAtr.SetSoundType(sfxType, true);
         walkAtr.UseStationaryPosVector(mpPhysObj->GetPosition());
         return Play(walkAtr);
