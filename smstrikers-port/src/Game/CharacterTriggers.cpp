@@ -469,10 +469,18 @@ void CharacterTriggerHandler(uintptr_t uParam)
         attrs.SetSoundType(0x4E, true);
         attrs.UseStationaryPosVector(nodePos);
         g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
-        attrs.Init();
-        attrs.SetSoundType(0x3A, true);
-        attrs.UseStationaryPosVector(nodePos);
-        g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
+        // PORT: sfx/SFXCHAR_DAISY_EFFORTS_Kick_Super_01.wav takes over when
+        // Daisy is the one performing the Super Strike. Falls back to the
+        // original sound for every other captain (and for Daisy too if no
+        // such file was found).
+        if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass != DAISY
+            || !PortCustomSFXPlay("SFXCHAR_DAISY_EFFORTS_Kick_Super_01"))
+        {
+            attrs.Init();
+            attrs.SetSoundType(0x3A, true);
+            attrs.UseStationaryPosVector(nodePos);
+            g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
+        }
         EmitShootToScoreJumpTrigger();
         break;
     }
@@ -491,10 +499,18 @@ void CharacterTriggerHandler(uintptr_t uParam)
         attrs.UseStationaryPosVector(nodePos);
         g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
         g_pCurrentlyUpdatingCharacter->StopSFX((Audio::eCharSFX)0x3A);
-        attrs.Init();
-        attrs.SetSoundType(0x3B, true);
-        attrs.UseStationaryPosVector(nodePos);
-        g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
+        // PORT: sfx/SFXCHAR_DAISY_EFFORTS_Windup_Super_01.wav takes over when
+        // Daisy is the one performing the Super Strike. Falls back to the
+        // original sound for every other captain (and for Daisy too if no
+        // such file was found).
+        if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass != DAISY
+            || !PortCustomSFXPlay("SFXCHAR_DAISY_EFFORTS_Windup_Super_01"))
+        {
+            attrs.Init();
+            attrs.SetSoundType(0x3B, true);
+            attrs.UseStationaryPosVector(nodePos);
+            g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
+        }
         break;
     }
 
