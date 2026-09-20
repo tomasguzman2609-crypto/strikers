@@ -469,7 +469,7 @@ void CharacterTriggerHandler(uintptr_t uParam)
         attrs.SetSoundType(0x4E, true);
         attrs.UseStationaryPosVector(nodePos);
         g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
-        // PORT: sfx/SFXCHAR_DAISY_EFFORTS_Windup_Super_01.wav / sfx/SFXCHAR_MARIO_EFFORTS_Windup_Super_01.wav
+        // PORT: sfx/SFXCHAR_DAISY_EFFORTS_Windup_Super_01.wav (Daisy) / sfx/SFXCHAR_MARIO_EFFORTS_Kick_Super_01.wav (Mario)
         // take over when Daisy/Mario is the one performing the Super Strike.
         // Falls back to the original sound for every other captain (and for
         // Daisy/Mario too if no such file was found).
@@ -478,7 +478,7 @@ void CharacterTriggerHandler(uintptr_t uParam)
             if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == DAISY)
                 bCustomSuperPlayed = PortCustomSFXPlay("SFXCHAR_DAISY_EFFORTS_Windup_Super_01");
             else if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == MARIO)
-                bCustomSuperPlayed = PortCustomSFXPlay("SFXCHAR_MARIO_EFFORTS_Windup_Super_01");
+                bCustomSuperPlayed = PortCustomSFXPlay("SFXCHAR_MARIO_EFFORTS_Kick_Super_01");
 
             if (!bCustomSuperPlayed)
             {
@@ -506,7 +506,7 @@ void CharacterTriggerHandler(uintptr_t uParam)
         attrs.UseStationaryPosVector(nodePos);
         g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
         g_pCurrentlyUpdatingCharacter->StopSFX((Audio::eCharSFX)0x3A);
-        // PORT: sfx/SFXCHAR_DAISY_EFFORTS_Kick_Super_01.wav / sfx/SFXCHAR_MARIO_EFFORTS_Kick_Super_01.wav
+        // PORT: sfx/SFXCHAR_DAISY_EFFORTS_Kick_Super_01.wav (Daisy) / sfx/SFXCHAR_MARIO_EFFORTS_Windup_Super_01.wav (Mario)
         // take over when Daisy/Mario is the one performing the Super Strike.
         // Falls back to the original sound for every other captain (and for
         // Daisy/Mario too if no such file was found).
@@ -515,7 +515,7 @@ void CharacterTriggerHandler(uintptr_t uParam)
             if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == DAISY)
                 bCustomSuperPlayed = PortCustomSFXPlay("SFXCHAR_DAISY_EFFORTS_Kick_Super_01");
             else if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == MARIO)
-                bCustomSuperPlayed = PortCustomSFXPlay("SFXCHAR_MARIO_EFFORTS_Kick_Super_01");
+                bCustomSuperPlayed = PortCustomSFXPlay("SFXCHAR_MARIO_EFFORTS_Windup_Super_01");
 
             if (!bCustomSuperPlayed)
             {
