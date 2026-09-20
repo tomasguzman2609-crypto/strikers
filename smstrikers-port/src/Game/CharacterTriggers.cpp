@@ -1,4 +1,5 @@
 #include "Game/CharacterTriggers.h"
+#include "port/custom_sfx.h"
 #include "Game/AnimInventory.h"
 #include "Game/Player.h"
 #include "Game/Ball.h"
@@ -1466,7 +1467,15 @@ void CharacterElectrocutionEffect(cCharacter* pCharacter, const nlVector3& v3Pos
     {
         pCharacter->m_pCharacterSFX->Stop((Audio::eCharSFX)0x46, cGameSFX::SFX_STOP_FIRST);
         pCharacter->Play3DSFX((Audio::eCharSFX)0x46, (PosUpdateMethod)2, 100.0f);
-        pCharacter->PlayRandomCharDialogue(4, (PosUpdateMethod)2, 100.0f, -1.0f);
+        // PORT: sfx/SFXCHAR_WARIO_EFFORTS_Electrocute_01.wav always takes over
+        // when Wario is the one getting electrocuted. Falls back to the
+        // original random dialogue for every other character (and for Wario
+        // too if no such file was found).
+        if (pCharacter->m_eCharacterClass != WARIO
+            || !PortCustomSFXPlay("SFXCHAR_WARIO_EFFORTS_Electrocute_01"))
+        {
+            pCharacter->PlayRandomCharDialogue(4, (PosUpdateMethod)2, 100.0f, -1.0f);
+        }
     }
 
     EmissionController* pController = EmissionManager::Create(fxGetGroup("electrocution"), 0);
