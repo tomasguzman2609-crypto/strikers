@@ -9,6 +9,8 @@
 
 #include "NL/nlMath.h"
 #include "NL/nlSingleton.h"
+#include "port/custom_sfx.h"
+#include <cstring>
 
 extern cTeam* g_pTeams[2];
 
