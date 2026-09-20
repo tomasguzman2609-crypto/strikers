@@ -572,17 +572,11 @@ void CharacterTriggerHandler(uintptr_t uParam)
     case 0x9F338B11:
         if (Audio::gStadGenSFX.IsInited())
         {
-            // PORT: sfx/SFXBALL_Post_Metal.wav always takes over for the ball
-            // hitting the goalpost, on every stadium. Falls back to the
-            // original per-stadium post sound if no such file was found.
-            if (!PortCustomSFXPlay("SFXBALL_Post_Metal"))
-            {
-                Audio::SoundAttributes attrs;
-                attrs.Init();
-                attrs.SetSoundType(0xC6, true);
-                attrs.UseStationaryPosVector(g_pCurrentlyUpdatingCharacter->m_v3Position);
-                Audio::gStadGenSFX.Play(attrs);
-            }
+            Audio::SoundAttributes attrs;
+            attrs.Init();
+            attrs.SetSoundType(0xC6, true);
+            attrs.UseStationaryPosVector(g_pCurrentlyUpdatingCharacter->m_v3Position);
+            Audio::gStadGenSFX.Play(attrs);
         }
         break;
 
@@ -1913,4 +1907,3 @@ void KillSlideTackleTrail(cCharacter* pCharacter)
     const EffectsGroup* pGroup = fxGetGroup("slide_tackle_trail");
     pCharacter->EndEffect(pGroup);
 }
-
