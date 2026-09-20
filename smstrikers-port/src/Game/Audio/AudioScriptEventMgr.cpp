@@ -8,6 +8,7 @@
 #include "Game/Physics/PhysicsNet.h"
 #include "Game/Sys/EventData.h"
 #include "Game/Team.h"
+#include "port/custom_sfx.h"
 
 #include "Game/AI/FielderActions.h"
 #include "Game/AI/FuzzyVariant.h"
@@ -511,7 +512,15 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         }
 
         fTimer = Audio::GetAudioTimer();
-        Audio::gStadGenSFX.Play(Audio::STADSFX_GEN_FIREWORKS_FLOOR, intensity, -1.0f, true, 100.0f);
+        // PORT: sfx/SFXBALL_Post_Metal.wav always takes over for a real ball-
+        // to-goalpost collision (this is the actual physics-driven hit, not
+        // the reused STADSFX_GEN_FIREWORKS_FLOOR resource name it borrows).
+        // Falls back to the original spark-accent sound if no such file was
+        // found. The event below (crowd/commentary hook) still fires either way.
+        if (!PortCustomSFXPlay("SFXBALL_Post_Metal"))
+        {
+            Audio::gStadGenSFX.Play(Audio::STADSFX_GEN_FIREWORKS_FLOOR, intensity, -1.0f, true, 100.0f);
+        }
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_HitPost, GetEventTeam<CollisionBallGoalpostData>(pEvent, false));
         return;
     }
