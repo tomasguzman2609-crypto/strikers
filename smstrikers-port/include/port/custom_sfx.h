@@ -22,7 +22,20 @@ void PortCustomSFXInit(void);
 // already playing. Returns 1 if sfx/<name>.wav exists (whether or not it
 // decoded and started cleanly), 0 if there is no such file - so a call site
 // can fall back to the game's own sound only when nothing was dropped in.
+//
+// Follows the sim's current slow-motion time scale (see PortSimTimeScalePtr
+// in FixedUpdateTask.cpp), the same way MusyX's own group pitch does, so a
+// short one-shot sound dropped into a moment that can go into slow-mo (a
+// hit, a landing) still tracks it. For a longer voice line played across a
+// cinematic/QTE that can drop the time scale to a near-freeze (e.g. the
+// Super Strike matrix-cam), that tracking makes the clip grind to a crawl
+// instead of finishing - use PortCustomSFXPlayFixed for those instead.
 int PortCustomSFXPlay(const char* name);
+
+// Same as PortCustomSFXPlay, but always plays at normal speed regardless of
+// the sim's slow-motion time scale. Use this for voice lines/dialogue that
+// should finish on their own schedule even across a slow-mo cinematic.
+int PortCustomSFXPlayFixed(const char* name);
 
 // Adds any currently-playing custom clips into `pcm` (interleaved, signed
 // 16-bit, stereo, `frames` sample pairs), with saturation. Called once per
