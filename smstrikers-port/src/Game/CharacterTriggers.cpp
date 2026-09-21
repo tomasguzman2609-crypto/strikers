@@ -476,9 +476,9 @@ void CharacterTriggerHandler(uintptr_t uParam)
         {
             bool bCustomSuperPlayed = false;
             if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == DAISY)
-                bCustomSuperPlayed = PortCustomSFXPlay("SFXCHAR_DAISY_EFFORTS_Windup_Super_01");
+                bCustomSuperPlayed = PortCustomSFXPlayFixed("SFXCHAR_DAISY_EFFORTS_Windup_Super_01");
             else if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == MARIO)
-                bCustomSuperPlayed = PortCustomSFXPlay("SFXCHAR_MARIO_EFFORTS_Kick_Super_01");
+                bCustomSuperPlayed = PortCustomSFXPlayFixed("SFXCHAR_MARIO_EFFORTS_Kick_Super_01");
 
             if (!bCustomSuperPlayed)
             {
@@ -513,9 +513,9 @@ void CharacterTriggerHandler(uintptr_t uParam)
         {
             bool bCustomSuperPlayed = false;
             if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == DAISY)
-                bCustomSuperPlayed = PortCustomSFXPlay("SFXCHAR_DAISY_EFFORTS_Kick_Super_01");
+                bCustomSuperPlayed = PortCustomSFXPlayFixed("SFXCHAR_DAISY_EFFORTS_Kick_Super_01");
             else if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == MARIO)
-                bCustomSuperPlayed = PortCustomSFXPlay("SFXCHAR_MARIO_EFFORTS_Windup_Super_01");
+                bCustomSuperPlayed = PortCustomSFXPlayFixed("SFXCHAR_MARIO_EFFORTS_Windup_Super_01");
 
             if (!bCustomSuperPlayed)
             {
