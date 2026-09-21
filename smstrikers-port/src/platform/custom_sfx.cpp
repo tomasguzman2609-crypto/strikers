@@ -31,6 +31,7 @@ struct Voice
     const Clip* clip = nullptr;
     double framePos = 0.0; // in frames (sample pairs), not samples; fractional so
                             // it can track the game's slow-motion timescale below
+    bool ignoreTimeScale = false; // true for PortCustomSFXPlayFixed voices
 };
 
 // PORT: the game slows its own audio down (pitch + speed) during slow-motion
@@ -258,6 +259,35 @@ Clip* FindOrLoad(const char* name)
     return c;
 }
 
+int PlayInternal(const char* name, bool ignoreTimeScale)
+{
+    if (name == nullptr || *name == '\0')
+        return 0;
+
+    Clip* c = FindOrLoad(name);
+    if (c == nullptr || !c->exists)
+        return 0;
+
+    if (c->loaded && !c->samples.empty())
+    {
+        for (auto& v : g_voices)
+        {
+            if (v.clip == nullptr)
+            {
+                v.clip = c;
+                v.framePos = 0.0;
+                v.ignoreTimeScale = ignoreTimeScale;
+                return 1;
+            }
+        }
+        // All voices busy: steal the oldest-looking slot (index 0) rather than drop the cue.
+        g_voices[0].clip = c;
+        g_voices[0].framePos = 0.0;
+        g_voices[0].ignoreTimeScale = ignoreTimeScale;
+    }
+    return 1;
+}
+
 } // namespace
 
 extern "C" void PortCustomSFXInit(void)
@@ -277,29 +307,12 @@ extern "C" void PortCustomSFXInit(void)
 
 extern "C" int PortCustomSFXPlay(const char* name)
 {
-    if (name == nullptr || *name == '\0')
-        return 0;
+    return PlayInternal(name, false);
+}
 
-    Clip* c = FindOrLoad(name);
-    if (c == nullptr || !c->exists)
-        return 0;
-
-    if (c->loaded && !c->samples.empty())
-    {
-        for (auto& v : g_voices)
-        {
-            if (v.clip == nullptr)
-            {
-                v.clip = c;
-                v.framePos = 0.0;
-                return 1;
-            }
-        }
-        // All voices busy: steal the oldest-looking slot (index 0) rather than drop the cue.
-        g_voices[0].clip = c;
-        g_voices[0].framePos = 0.0;
-    }
-    return 1;
+extern "C" int PortCustomSFXPlayFixed(const char* name)
+{
+    return PlayInternal(name, true);
 }
 
 extern "C" void PortCustomSFXMix(short* pcm, unsigned int frames)
@@ -327,6 +340,7 @@ extern "C" void PortCustomSFXMix(short* pcm, unsigned int frames)
             v.clip = nullptr;
             continue;
         }
+        const float step = v.ignoreTimeScale ? 1.0f : scale;
         for (unsigned int i = 0; i < frames && v.framePos < (double)total; i++)
         {
             const size_t i0 = (size_t)v.framePos;
@@ -343,7 +357,7 @@ extern "C" void PortCustomSFXMix(short* pcm, unsigned int frames)
                 if (clamped < -32768) clamped = -32768;
                 pcm[i * kMixChannels + ch] = (int16_t)clamped;
             }
-            v.framePos += (double)scale;
+            v.framePos += (double)step;
         }
         if (v.framePos >= (double)total)
             v.clip = nullptr; // done
