@@ -19,6 +19,13 @@ constexpr int kMixSampleRate = 32000;
 constexpr int kMixChannels = 2;
 constexpr int kMaxVoices = 4;
 
+// Floor for a PortCustomSFXPlayFixed voice's own playback rate as the sim's
+// slow-motion time scale drops (see PortCustomSFXMix below) - keeps a voice
+// line audibly slowed during a dramatic close-up without letting it grind
+// down to the same near-freeze crawl the sim's own time scale can reach
+// (as low as ~0.005 during the Super Strike matrix-cam).
+constexpr float kVoiceLineMinScale = 0.5f;
+
 struct Clip
 {
     std::vector<int16_t> samples; // interleaved, kMixChannels channels, kMixSampleRate
@@ -31,7 +38,9 @@ struct Voice
     const Clip* clip = nullptr;
     double framePos = 0.0; // in frames (sample pairs), not samples; fractional so
                             // it can track the game's slow-motion timescale below
-    bool ignoreTimeScale = false; // true for PortCustomSFXPlayFixed voices
+    float minScale = 0.05f; // playback-rate floor; PortCustomSFXPlayFixed raises this
+                             // (see kVoiceLineMinScale) so it still tracks slow-mo, just
+                             // not all the way down
 };
 
 // PORT: the game slows its own audio down (pitch + speed) during slow-motion
@@ -259,7 +268,7 @@ Clip* FindOrLoad(const char* name)
     return c;
 }
 
-int PlayInternal(const char* name, bool ignoreTimeScale)
+int PlayInternal(const char* name, float minScale)
 {
     if (name == nullptr || *name == '\0')
         return 0;
@@ -276,14 +285,14 @@ int PlayInternal(const char* name, bool ignoreTimeScale)
             {
                 v.clip = c;
                 v.framePos = 0.0;
-                v.ignoreTimeScale = ignoreTimeScale;
+                v.minScale = minScale;
                 return 1;
             }
         }
         // All voices busy: steal the oldest-looking slot (index 0) rather than drop the cue.
         g_voices[0].clip = c;
         g_voices[0].framePos = 0.0;
-        g_voices[0].ignoreTimeScale = ignoreTimeScale;
+        g_voices[0].minScale = minScale;
     }
     return 1;
 }
@@ -307,12 +316,12 @@ extern "C" void PortCustomSFXInit(void)
 
 extern "C" int PortCustomSFXPlay(const char* name)
 {
-    return PlayInternal(name, false);
+    return PlayInternal(name, 0.05f);
 }
 
 extern "C" int PortCustomSFXPlayFixed(const char* name)
 {
-    return PlayInternal(name, true);
+    return PlayInternal(name, kVoiceLineMinScale);
 }
 
 extern "C" void PortCustomSFXMix(short* pcm, unsigned int frames)
@@ -340,7 +349,7 @@ extern "C" void PortCustomSFXMix(short* pcm, unsigned int frames)
             v.clip = nullptr;
             continue;
         }
-        const float step = v.ignoreTimeScale ? 1.0f : scale;
+        const float step = (scale < v.minScale) ? v.minScale : scale;
         for (unsigned int i = 0; i < frames && v.framePos < (double)total; i++)
         {
             const size_t i0 = (size_t)v.framePos;
