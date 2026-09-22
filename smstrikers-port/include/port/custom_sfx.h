@@ -32,9 +32,12 @@ void PortCustomSFXInit(void);
 // instead of finishing - use PortCustomSFXPlayFixed for those instead.
 int PortCustomSFXPlay(const char* name);
 
-// Same as PortCustomSFXPlay, but always plays at normal speed regardless of
-// the sim's slow-motion time scale. Use this for voice lines/dialogue that
-// should finish on their own schedule even across a slow-mo cinematic.
+// Same as PortCustomSFXPlay, but never slows below half speed even if the
+// sim's time scale drops further (see kVoiceLineMinScale in custom_sfx.cpp).
+// Use this for voice lines/dialogue played across a cinematic/QTE that can
+// drop the time scale to a near-freeze (e.g. the Super Strike matrix-cam) -
+// it still audibly tracks the slow-mo, but stays intelligible instead of
+// grinding down to a crawl.
 int PortCustomSFXPlayFixed(const char* name);
 
 // Adds any currently-playing custom clips into `pcm` (interleaved, signed
