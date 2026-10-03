@@ -49,6 +49,7 @@ extern cBall* g_pBall;
 extern eCameraType g_eCurrentCameraType;   // Camera/CameraMan.cpp
 extern PowerupBase* g_pPowerups[25];       // AI/Powerups.cpp
 #include "port/benchmark.h"
+#include "port/mod_challenge.h"
 extern PowerupBase* g_pPowerups[];
 extern cCharacter* g_pCurrentlyUpdatingCharacter;
 extern cTeam* g_pCurrentlyUpdatingTeam;
@@ -1148,9 +1149,55 @@ extern "C" void PortDebugFrame(void)
     }
 }
 
+// PORT: Player 1 is identified by controller slot (pad index 0), not by a fixed team/player
+// pointer, since control can swap between fielders on a team - same pattern already used
+// elsewhere in this codebase (e.g. cPlayer::GetGlobalPad()->m_padIndex). Returns NULL if no team
+// currently has anyone on pad 0 (e.g. the match hasn't started, or P1 is CPU-controlled).
+static cTeam* PortFindPlayer1Team()
+{
+    for (int side = 0; side < 2; side++)
+    {
+        cTeam* pTeam = g_pTeams[side];
+        if (pTeam == NULL)
+            continue;
+        for (int i = 0; i < 5; i++)
+        {
+            cPlayer* pPlayer = pTeam->GetPlayer(i);
+            if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL && pPlayer->GetGlobalPad()->m_padIndex == 0)
+                return pTeam;
+        }
+    }
+    return NULL;
+}
+
 void cGame::Update(float deltaTime)
 {
     mThoughtsAllowedThisUpdate = 1;
+
+    // PORT: challenge roulette - poll mods/challenge.txt, then enforce the two challenges that
+    // need a continuous per-frame nudge rather than a one-shot hook (NO_POWERUPS/INFINITE_POWERUPS
+    // act on a team's current powerup slot, which can change on its own between polls).
+    PortModChallengeUpdate();
+    {
+        int challenge = PortModChallengeGetActive();
+        if (challenge == PORT_CHALLENGE_NO_POWERUPS || challenge == PORT_CHALLENGE_INFINITE_POWERUPS)
+        {
+            cTeam* pP1Team = PortFindPlayer1Team();
+            if (pP1Team != NULL)
+            {
+                if (challenge == PORT_CHALLENGE_NO_POWERUPS)
+                {
+                    if (!pP1Team->IsCurrentNoPowerup())
+                        pP1Team->ClearCurrentPowerUp();
+                }
+                else // PORT_CHALLENGE_INFINITE_POWERUPS
+                {
+                    if (pP1Team->IsCurrentNoPowerup())
+                        PowerupBase::AwardPowerup(pP1Team);
+                }
+            }
+        }
+    }
 
     // PORT: the benchmark discards everything before this point.
     PortBenchMatchActive();
@@ -1576,6 +1623,11 @@ void cGame::InitGameState(eGameState state)
     case GS_END_GAME:
         m_pPostGameDoneClock->Start();
         m_pGameClock->Stop();
+        // PORT: the match just ended - clear any active challenge so the companion app can
+        // offer another spin for the next one. InitGameState only runs this case body once per
+        // transition into GS_END_GAME (see ChangeGameState's `if (state != m_eGameState)` guard),
+        // so this fires exactly once per match, not every frame.
+        PortModChallengeClear();
         break;
 
     case GS_GAMEPLAY:
