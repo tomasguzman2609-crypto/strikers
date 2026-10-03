@@ -26,18 +26,16 @@ void PortCustomSFXInit(void);
 // Always plays at normal speed, regardless of the sim's current slow-motion
 // time scale (see PortSimTimeScalePtr in FixedUpdateTask.cpp). Use this for
 // ordinary one-shot drop-ins (a hit, a tackle, the ball clanging off the
-// post) that are not themselves part of a slow-mo cinematic/QTE - use
-// PortCustomSFXPlayFixed instead for a voice line played across one of
-// those (e.g. the Super Strike matrix-cam), which should still audibly
-// track that slow-mo.
+// post) that are not part of a cinematic/QTE.
 int PortCustomSFXPlay(const char* name);
 
-// Same as PortCustomSFXPlay, but tracks the sim's slow-motion time scale
-// (down to half speed, never slower - see kVoiceLineMinScale in
-// custom_sfx.cpp) instead of ignoring it. Use this only at call sites that
-// are themselves part of a slow-mo cinematic/QTE (e.g. the Super Strike
-// windup/kick and the Super Strike matrix-cam) - everything else should use
-// PortCustomSFXPlay, which is immune to slow-mo entirely.
+// Same as PortCustomSFXPlay in every way that matters now: also always
+// plays at normal speed, immune to the sim's slow-motion time scale (see
+// kVoiceLineMinScale in custom_sfx.cpp, currently 1.0). Kept as a separate
+// entry point for voice lines played across a cinematic/QTE (the Super
+// Strike windup/kick, the HyperStrike charge/shot) in case that call site
+// ever needs different handling again later - today it behaves exactly
+// like PortCustomSFXPlay.
 int PortCustomSFXPlayFixed(const char* name);
 
 // Adds any currently-playing custom clips into `pcm` (interleaved, signed
