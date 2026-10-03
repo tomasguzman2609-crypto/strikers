@@ -2273,6 +2273,13 @@ void cCharacter::UpdateMovementState(float fDeltaT)
 {
     float fDesiredSpeed = m_fDesiredSpeed;
 
+    // PORT: challenge roulette - the top speed every movement state below clamps down to. Normal
+    // value matches the game's own hardcoded cap (see the three "if (m_fActualSpeed > 15.0f)"
+    // checks and MOVEMENT_COAST's own below). FAST raises this cap too, otherwise the 1.5x
+    // fDesiredSpeed bump below gets silently clamped straight back down to 15 the instant the
+    // fielder reaches normal top speed, and the challenge would have no visible effect at all.
+    float fMaxActualSpeed = 15.0f;
+
     if (m_eClassType == FIELDER)
     {
         cFielder* pFielder = (cFielder*)this;
@@ -2296,7 +2303,10 @@ void cCharacter::UpdateMovementState(float fDeltaT)
             if (challenge == PORT_CHALLENGE_SLOW)
                 fDesiredSpeed *= 0.5f;
             else if (challenge == PORT_CHALLENGE_FAST)
+            {
                 fDesiredSpeed *= 1.5f;
+                fMaxActualSpeed *= 1.5f;
+            }
         }
     }
 
@@ -2305,11 +2315,11 @@ void cCharacter::UpdateMovementState(float fDeltaT)
     case MOVEMENT_COAST:
     {
         float mag = nlSqrt(m_v3Velocity.x * m_v3Velocity.x + m_v3Velocity.y * m_v3Velocity.y + m_v3Velocity.z * m_v3Velocity.z, true);
-        if (mag > 15.0f)
+        if (mag > fMaxActualSpeed)
         {
             nlPolar polar;
             nlCartesianToPolar(polar, m_v3Velocity.x, m_v3Velocity.y);
-            nlPolarToCartesian(m_v3Velocity.x, m_v3Velocity.y, polar.a, 15.0f);
+            nlPolarToCartesian(m_v3Velocity.x, m_v3Velocity.y, polar.a, fMaxActualSpeed);
         }
         break;
     }
@@ -2452,9 +2462,9 @@ void cCharacter::UpdateMovementState(float fDeltaT)
         m_pPhysicsCharacter->SetFacingDirection(aNewFacingDirection);
 
         m_fActualSpeed = SeekSpeed(m_fActualSpeed, fDesiredSpeed, m_fAccel, m_fDecel, fDeltaT);
-        if (m_fActualSpeed > 15.0f)
+        if (m_fActualSpeed > fMaxActualSpeed)
         {
-            m_fActualSpeed = 15.0f;
+            m_fActualSpeed = fMaxActualSpeed;
         }
 
         nlPolarToCartesian(m_v3Velocity.x, m_v3Velocity.y, m_aActualFacingDirection, m_fActualSpeed);
@@ -2464,9 +2474,9 @@ void cCharacter::UpdateMovementState(float fDeltaT)
     case MOVEMENT_RUNNING_NO_TURN:
     {
         m_fActualSpeed = SeekSpeed(m_fActualSpeed, fDesiredSpeed, m_fAccel, m_fDecel, fDeltaT);
-        if (m_fActualSpeed > 15.0f)
+        if (m_fActualSpeed > fMaxActualSpeed)
         {
-            m_fActualSpeed = 15.0f;
+            m_fActualSpeed = fMaxActualSpeed;
         }
 
         nlPolarToCartesian(m_v3Velocity.x, m_v3Velocity.y, m_aActualMovementDirection, m_fActualSpeed);
@@ -2483,9 +2493,9 @@ void cCharacter::UpdateMovementState(float fDeltaT)
         m_aActualMovementDirection = SeekDirection(m_aActualMovementDirection, m_aDesiredMovementDirection, m_fDirectionSeekSpeed, m_fDirectionSeekFalloff, fDeltaT);
 
         m_fActualSpeed = SeekSpeed(m_fActualSpeed, fDesiredSpeed, m_fAccel, m_fDecel, fDeltaT);
-        if (m_fActualSpeed > 15.0f)
+        if (m_fActualSpeed > fMaxActualSpeed)
         {
-            m_fActualSpeed = 15.0f;
+            m_fActualSpeed = fMaxActualSpeed;
         }
 
         nlPolarToCartesian(m_v3Velocity.x, m_v3Velocity.y, m_aActualMovementDirection, m_fActualSpeed);
