@@ -25,7 +25,7 @@ enum ePortChallenge
     PORT_CHALLENGE_INFINITE_POWERUPS = 4, // P1's team always has one ready (re-rolled the instant it's used)
     PORT_CHALLENGE_SLOW = 5,              // P1 moves at half speed
     PORT_CHALLENGE_FAST = 6,              // P1 moves at 1.5x speed
-    PORT_CHALLENGE_NO_PASSES = 7,         // P1's PAD_PASS (pass/cross) is blocked
+    PORT_CHALLENGE_NO_PASSES = 7,         // P1 can't cross/lob a pass (normal grounded passes still work)
     PORT_CHALLENGE_NO_TACKLES = 8,        // P1's PAD_SLIDE_ATTACK (tackle) is blocked
 };
 
