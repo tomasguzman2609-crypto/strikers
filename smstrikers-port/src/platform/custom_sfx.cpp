@@ -19,12 +19,13 @@ constexpr int kMixSampleRate = 32000;
 constexpr int kMixChannels = 2;
 constexpr int kMaxVoices = 4;
 
-// Floor for a PortCustomSFXPlayFixed voice's own playback rate as the sim's
-// slow-motion time scale drops (see PortCustomSFXMix below) - keeps a voice
-// line audibly slowed during a dramatic close-up without letting it grind
-// down to the same near-freeze crawl the sim's own time scale can reach
-// (as low as ~0.005 during the Super Strike matrix-cam).
-constexpr float kVoiceLineMinScale = 0.5f;
+// PortCustomSFXPlayFixed's playback-rate floor. 1.0 means "never slower
+// than normal speed" - i.e. completely immune to the sim's slow-motion time
+// scale, same as PortCustomSFXPlay. Custom clips (windup/kick/charge/shot
+// voice lines included) always play at their natural speed now, regardless
+// of what the Super Strike matrix-cam or anything else does to the sim's
+// own time scale.
+constexpr float kVoiceLineMinScale = 1.0f;
 
 struct Clip
 {
@@ -38,9 +39,10 @@ struct Voice
     const Clip* clip = nullptr;
     double framePos = 0.0; // in frames (sample pairs), not samples; fractional so
                             // it can track the game's slow-motion timescale below
-    float minScale = 0.05f; // playback-rate floor; PortCustomSFXPlayFixed raises this
-                             // (see kVoiceLineMinScale) so it still tracks slow-mo, just
-                             // not all the way down
+    float minScale = 1.0f; // playback-rate floor; both PortCustomSFXPlay and
+                            // PortCustomSFXPlayFixed set this to 1.0 (see
+                            // kVoiceLineMinScale), so no custom clip ever
+                            // tracks the sim's slow-motion time scale
 };
 
 // PORT: the game slows its own audio down (pitch + speed) during slow-motion
