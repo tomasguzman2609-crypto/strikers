@@ -1,4 +1,5 @@
 #include "Game/Character.h"
+#include "port/mod_challenge.h"
 #include "Game/CharacterTemplate.h"
 #include "Game/CharacterTriggers.h"
 #include "Game/Effects/EmissionManager.h"
@@ -2284,6 +2285,18 @@ void cCharacter::UpdateMovementState(float fDeltaT)
         if (!isCharging)
         {
             fDesiredSpeed = pFielder->GetSpeedPowerupAdjusted(m_fDesiredSpeed);
+        }
+
+        // PORT: challenge roulette - SLOW/FAST scale Player 1's own final desired speed, a local
+        // variable here rather than a shared PlayerTweaks/GameTweaks entry, so no other fielder
+        // of the same character is affected.
+        if (pFielder->GetGlobalPad() != NULL && pFielder->GetGlobalPad()->m_padIndex == 0)
+        {
+            int challenge = PortModChallengeGetActive();
+            if (challenge == PORT_CHALLENGE_SLOW)
+                fDesiredSpeed *= 0.5f;
+            else if (challenge == PORT_CHALLENGE_FAST)
+                fDesiredSpeed *= 1.5f;
         }
     }
 
