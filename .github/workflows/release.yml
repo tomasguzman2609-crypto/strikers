@@ -114,6 +114,34 @@ jobs:
         shell: bash
         run: ./tools/rebuild.sh build-aur
 
+      # TEMP DEBUG: only runs if the Build step above failed. Finds platpad.cpp's compiled object
+      # (wherever Ninja put it) and dumps its symbol table directly, so we can see whether the
+      # object genuinely has no cPlatPad symbols, or genstubs just isn't finding it. Safe to delete
+      # once this is resolved.
+      - name: Debug platpad object (only runs if Build failed)
+        if: runner.os == 'Windows' && failure()
+        working-directory: smstrikers-port
+        shell: bash
+        run: |
+          echo "--- looking for platpad.cpp's object file ---"
+          find build-aur -iname "*platpad*" 2>/dev/null
+          echo
+          echo "--- looking for mod_challenge.cpp's object file ---"
+          find build-aur -iname "*mod_challenge*" 2>/dev/null
+          echo
+          NM=$(command -v llvm-nm || echo "/c/Program Files/LLVM/bin/llvm-nm.exe")
+          OBJ=$(find build-aur -iname "platpad.cpp.obj" 2>/dev/null | head -1)
+          if [ -n "$OBJ" ]; then
+            echo "--- symbol count in $OBJ ---"
+            "$NM" --format=just-symbols --defined-only "$OBJ" 2>&1 | wc -l
+            echo "--- symbols matching PlatPad/IsPressed/AnalogLeft in $OBJ ---"
+            "$NM" --format=just-symbols --defined-only "$OBJ" 2>&1 | grep -i "PlatPad\|IsPressed\|AnalogLeft" || echo "(none found - object defines nothing we expect)"
+          else
+            echo "!! no platpad.cpp.obj found anywhere under build-aur at all"
+            echo "--- full list of .obj files under build-aur (first 40) ---"
+            find build-aur -iname "*.obj" 2>/dev/null | head -40
+          fi
+
       - name: Start the Ubuntu 22.04 container (Linux)
         if: runner.os == 'Linux'
         run: |
