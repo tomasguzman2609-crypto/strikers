@@ -1,5 +1,6 @@
 #include "NL/platpad.h"
 #include "port/overlay.h"
+#include "port/mod_challenge.h"
 #include <stdlib.h>
 #include "dolphin/os.h"
 
@@ -21,6 +22,22 @@ namespace
 {
 PadStatus padCategories[2];
 PadStatus* padStatus = &padCategories[0];
+
+// PORT: challenge roulette - blocks Player 1's (pad 0's) tackle/pass input at the one place every
+// call site (IsPressed/PlatJustPressed/PlatJustReleased) funnels through, rather than patching
+// each of the ~11 call sites across Fielder.cpp/FielderActions.cpp/FielderDesires.cpp. 25 and 27
+// are Game/Player.h's PAD_SLIDE_ATTACK and PAD_PASS - this file sits below Game/ in the build's
+// layering, so the values are inlined rather than #included. Checked against the *action* id
+// passed in by the caller, before `button` gets overwritten by the hardware-button remap below.
+bool PortActionBlockedForPad0(int action)
+{
+    int challenge = PortModChallengeGetActive();
+    if (challenge == PORT_CHALLENGE_NO_TACKLES && action == 25) // PAD_SLIDE_ATTACK
+        return true;
+    if (challenge == PORT_CHALLENGE_NO_PASSES && action == 27) // PAD_PASS
+        return true;
+    return false;
+}
 
 // PORT: delta is real elapsed time; the console added a sixtieth per retrace.
 static inline void UpdateButtonStateTime(PadStatus* pPadStatus, int padIdx, float delta)
@@ -297,6 +314,9 @@ f32 cPlatPad::GetButtonStateTime(int button, bool remap)
  */
 bool cPlatPad::PlatJustReleased(int button, bool remap)
 {
+    if (m_padIndex == 0 && PortActionBlockedForPad0(button))
+        return false;
+
     if (remap)
     {
         button = cPadManager::m_pRemapArray[button];
@@ -311,6 +331,9 @@ bool cPlatPad::PlatJustReleased(int button, bool remap)
  */
 bool cPlatPad::PlatJustPressed(int button, bool remap)
 {
+    if (m_padIndex == 0 && PortActionBlockedForPad0(button))
+        return false;
+
     if (remap)
     {
         button = cPadManager::m_pRemapArray[button];
@@ -325,6 +348,9 @@ bool cPlatPad::PlatJustPressed(int button, bool remap)
  */
 bool cPlatPad::IsPressed(int button, bool remap)
 {
+    if (m_padIndex == 0 && PortActionBlockedForPad0(button))
+        return false;
+
     if (remap != 0)
     {
         button = cPadManager::m_pRemapArray[button];
