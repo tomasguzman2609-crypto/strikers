@@ -1,4 +1,5 @@
 #include "Game/AI/FielderActions.h"
+#include "port/custom_sfx.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/Camera/animcam.h"
 #include "Game/Camera/rumblefilter.h"
@@ -3920,6 +3921,12 @@ void cFielder::ActionSlideAttack(float fDeltaTime)
             mActionSlideAttackVars.bAttackSucceeded = TestCollision(0.05f, GetPrevJointPosition(m_nBallJointIndex), GetJointPosition(m_nBallJointIndex), 0.18f, pBall->m_v3PrevPosition, pBall->m_v3Position);
             if (mActionSlideAttackVars.bAttackSucceeded)
             {
+                // PORT: sfx/SFXCHAR_Tackle_01.wav plays exactly once, right
+                // here, the instant a slide tackle actually makes contact
+                // with the ball (this block only runs once per successful
+                // steal, since m_pOwner stops being NULL on the next frame).
+                PortCustomSFXPlay("SFXCHAR_Tackle_01");
+
                 cPlayer* pPrevOwner = g_pBall->m_pPrevOwner;
                 if (pPrevOwner != NULL && pPrevOwner->m_eClassType == FIELDER)
                 {
