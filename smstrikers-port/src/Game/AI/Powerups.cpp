@@ -1,4 +1,5 @@
 #include "Game/AI/Powerups.h"
+#include "port/mod_challenge.h"
 #include "Game/AI/Fielder.h"
 #include "Game/AI/AiUtil.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
@@ -1079,6 +1080,22 @@ void PowerupBase::Update(float dt)
     }
 }
 
+// PORT: same "which team has Player 1" check as cGame::Update's PortFindPlayer1Team - duplicated
+// locally (rather than shared) since the two are in different translation units and this is a
+// three-line loop, not worth a new header just for it.
+static bool PortTeamHasPlayer1(cTeam* pTeam)
+{
+    if (pTeam == NULL)
+        return false;
+    for (int i = 0; i < 5; i++)
+    {
+        cPlayer* pPlayer = pTeam->GetPlayer(i);
+        if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL && pPlayer->GetGlobalPad()->m_padIndex == 0)
+            return true;
+    }
+    return false;
+}
+
 /**
  * Offset/Address/Size: 0x3DFC | 0x8005E6E8 | size: 0x608
  */
@@ -1328,6 +1345,16 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     if (nlSingleton<GameInfoManager>::Instance()->GetCustomPowerups() == CP_GIANT)
     {
         nNumOfPowerups = 1;
+    }
+
+    // PORT: challenge roulette - "only mushroom" forces whatever just got rolled above back to
+    // POWER_UP_MUSHROOM for Player 1's team specifically, right before it's actually granted, so
+    // the rest of the roll (multiples bonus, etc.) still runs normally and only the final type
+    // changes. NO_POWERUPS is handled separately in cGame::Update (it needs to also clear a
+    // powerup the team is already holding, not just block new ones).
+    if (PortModChallengeGetActive() == PORT_CHALLENGE_ONLY_MUSHROOM && PortTeamHasPlayer1(pTeam))
+    {
+        powerUpType = POWER_UP_MUSHROOM;
     }
 
     pTeam->SetCurrentPowerUp(powerUpType, nNumOfPowerups);
