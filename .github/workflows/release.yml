@@ -132,14 +132,25 @@ jobs:
           NM=$(command -v llvm-nm || echo "/c/Program Files/LLVM/bin/llvm-nm.exe")
           OBJ=$(find build-aur -iname "platpad.cpp.obj" 2>/dev/null | head -1)
           if [ -n "$OBJ" ]; then
-            echo "--- symbol count in $OBJ ---"
-            "$NM" --format=just-symbols --defined-only "$OBJ" 2>&1 | wc -l
-            echo "--- symbols matching PlatPad/IsPressed/AnalogLeft in $OBJ ---"
-            "$NM" --format=just-symbols --defined-only "$OBJ" 2>&1 | grep -i "PlatPad\|IsPressed\|AnalogLeft" || echo "(none found - object defines nothing we expect)"
+            echo "--- ALL defined symbols in $OBJ ---"
+            "$NM" --format=just-symbols --defined-only "$OBJ" 2>&1
+            echo
+            echo "--- undefined (referenced but not defined) symbols in $OBJ, first 60 ---"
+            "$NM" --format=just-symbols --undefined-only "$OBJ" 2>&1 | head -60
+            echo
+            echo "--- compiler/linker version info ---"
+            "$NM" --version 2>&1 | head -5
           else
             echo "!! no platpad.cpp.obj found anywhere under build-aur at all"
             echo "--- full list of .obj files under build-aur (first 40) ---"
             find build-aur -iname "*.obj" 2>/dev/null | head -40
+          fi
+
+          MCOBJ=$(find build-aur -iname "mod_challenge.cpp.obj" 2>/dev/null | head -1)
+          if [ -n "$MCOBJ" ]; then
+            echo
+            echo "--- ALL defined symbols in $MCOBJ ---"
+            "$NM" --format=just-symbols --defined-only "$MCOBJ" 2>&1
           fi
 
       - name: Start the Ubuntu 22.04 container (Linux)
