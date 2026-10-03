@@ -3748,6 +3748,14 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
     SetAnimState(0x64, true, 0.2f, false, false);
     InitMovementCoast();
 
+    // PORT: sfx/SFXCHAR_Tackle_01.wav - this is the slide-tackle action's
+    // own init function, called once whenever the action actually starts
+    // (human input or AI alike go through SetAction(ACTION_SLIDE_ATTACK)
+    // here, same as every other action), not a hardcoded button check.
+    // Always plays at normal speed (PortCustomSFXPlay's default minScale),
+    // so it never gets caught by any Super Strike slow-mo.
+    PortCustomSFXPlay("SFXCHAR_Tackle_01");
+
     m_tSlideAttackTimer.SetSeconds(g_pGame->m_pGameTweaks->fSlideAttackTimeToSlide);
 
     mActionSlideAttackVars.eSlideAttackState = SLIDE_ATTACK_DOWN;
@@ -3921,12 +3929,6 @@ void cFielder::ActionSlideAttack(float fDeltaTime)
             mActionSlideAttackVars.bAttackSucceeded = TestCollision(0.05f, GetPrevJointPosition(m_nBallJointIndex), GetJointPosition(m_nBallJointIndex), 0.18f, pBall->m_v3PrevPosition, pBall->m_v3Position);
             if (mActionSlideAttackVars.bAttackSucceeded)
             {
-                // PORT: sfx/SFXCHAR_Tackle_01.wav plays exactly once, right
-                // here, the instant a slide tackle actually makes contact
-                // with the ball (this block only runs once per successful
-                // steal, since m_pOwner stops being NULL on the next frame).
-                PortCustomSFXPlay("SFXCHAR_Tackle_01");
-
                 cPlayer* pPrevOwner = g_pBall->m_pPrevOwner;
                 if (pPrevOwner != NULL && pPrevOwner->m_eClassType == FIELDER)
                 {
