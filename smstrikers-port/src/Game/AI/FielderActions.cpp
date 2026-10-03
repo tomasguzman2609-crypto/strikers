@@ -1,5 +1,6 @@
 #include "Game/AI/FielderActions.h"
 #include "port/custom_sfx.h"
+#include "port/mod_challenge.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/Camera/animcam.h"
 #include "Game/Camera/rumblefilter.h"
@@ -2088,6 +2089,18 @@ bool cFielder::DoCalcCanDoPerfectPass(cFielder* pPassTarget, const nlVector3& v3
  */
 void cFielder::InitActionPass(cPlayer* pPassTarget, bool bVolleyPass, bool bAllowLeadPass)
 {
+    // PORT: challenge roulette - "no crosses". Every pass, human or AI, funnels through this one
+    // init function, and bVolleyPass is exactly the pass/cross switch (true = lofted volley/cross,
+    // false = normal grounded pass - see TestQueuedActions, which only sets it when PAD_AIM is
+    // held past the trigger threshold alongside PAD_PASS). So for Player 1 specifically, force a
+    // would-be cross back into a grounded pass instead of blocking PAD_PASS outright - that way
+    // normal passes keep working exactly as before, only the lofted cross is taken away.
+    if (bVolleyPass && GetGlobalPad() != nullptr && GetGlobalPad()->m_padIndex == 0
+        && PortModChallengeGetActive() == PORT_CHALLENGE_NO_PASSES)
+    {
+        bVolleyPass = false;
+    }
+
     InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
     SetAction(ACTION_PASS);
 
