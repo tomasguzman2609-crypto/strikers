@@ -316,7 +316,14 @@ extern "C" void PortCustomSFXInit(void)
 
 extern "C" int PortCustomSFXPlay(const char* name)
 {
-    return PlayInternal(name, 0.05f);
+    // minScale=1.0: never run slower than normal speed. Regular one-shot
+    // drop-ins (a hit, a tackle, the goalpost clang) are not part of any
+    // Super Strike cinematic, so they should never sound slowed down just
+    // because the sim's time scale happens to be off of 1.0 somewhere else
+    // in the match - only PortCustomSFXPlayFixed's voice lines (played at
+    // call sites that are themselves part of a slow-mo special) are meant
+    // to track that.
+    return PlayInternal(name, 1.0f);
 }
 
 extern "C" int PortCustomSFXPlayFixed(const char* name)
