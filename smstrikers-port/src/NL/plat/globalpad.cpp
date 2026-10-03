@@ -1,5 +1,6 @@
 #include "NL/globalpad.h"
 #include "NL/nlMath.h"
+#include "port/mod_challenge.h"
 
 cGlobalPad* cPadManager::m_aPads[PAD_MAX_CONTROLLERS];
 s32* cPadManager::m_pRemapArray = nullptr;
@@ -15,6 +16,16 @@ void cGlobalPad::Update(float deltaTime)
 
     x = this->AnalogLeftX();
     y = this->AnalogLeftY();
+
+    // PORT: challenge roulette - "inverted controls" flips Player 1's (pad 0's) movement stick on
+    // both axes, upstream of everything that reads direction/magnitude from it (AI pads never
+    // go through here at all, and pad 1+ keep their own untouched x/y).
+    if (m_padIndex == 0 && PortModChallengeGetActive() == PORT_CHALLENGE_INVERTED_CONTROLS)
+    {
+        x = -x;
+        y = -y;
+    }
+
     m_polarAnalogLeft.r = nlSqrt((x * x) + (y * y), 1);
 
     if ((0.f != x) || (0.f != y))
