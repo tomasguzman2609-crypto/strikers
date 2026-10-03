@@ -479,12 +479,11 @@ void CharacterTriggerHandler(uintptr_t uParam)
                 bCustomSuperPlayed = PortCustomSFXPlayFixed("SFXCHAR_DAISY_EFFORTS_Windup_Super_01");
             else if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == MARIO)
                 bCustomSuperPlayed = PortCustomSFXPlayFixed("SFXCHAR_MARIO_EFFORTS_Kick_Super_01");
-            else
-                // PORT: sfx/SFXCHAR_HyperStrike_Charge_01.wav - generic Super
-                // Strike charge voice line for every captain that doesn't
-                // have their own dedicated clip above. Same reliable call
-                // site as Daisy/Mario, so it fires every time, not just on
-                // a perfect result.
+            else if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == MYSTERY)
+                // PORT: sfx/SFXCHAR_HyperStrike_Charge_01.wav - Super Team's
+                // (the MYSTERY/robot characters') own Super Strike charge
+                // voice line. Same reliable call site as Daisy/Mario, so it
+                // fires every time, not just on a perfect result.
                 bCustomSuperPlayed = PortCustomSFXPlayFixed("SFXCHAR_HyperStrike_Charge_01");
 
             if (!bCustomSuperPlayed)
@@ -523,12 +522,11 @@ void CharacterTriggerHandler(uintptr_t uParam)
                 bCustomSuperPlayed = PortCustomSFXPlayFixed("SFXCHAR_DAISY_EFFORTS_Kick_Super_01");
             else if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == MARIO)
                 bCustomSuperPlayed = PortCustomSFXPlayFixed("SFXCHAR_MARIO_EFFORTS_Windup_Super_01");
-            else
-                // PORT: sfx/SFXCHAR_HyperStrike_Shot_01.wav - generic Super
-                // Strike shot voice line for every captain that doesn't have
-                // their own dedicated clip above. Same reliable call site as
-                // Daisy/Mario (fires on every Super Strike kick, not only a
-                // perfect result).
+            else if (g_pCurrentlyUpdatingCharacter->m_eCharacterClass == MYSTERY)
+                // PORT: sfx/SFXCHAR_HyperStrike_Shot_01.wav - Super Team's
+                // (the MYSTERY/robot characters') own Super Strike shot
+                // voice line. Same reliable call site as Daisy/Mario (fires
+                // on every Super Strike kick, not only a perfect result).
                 bCustomSuperPlayed = PortCustomSFXPlayFixed("SFXCHAR_HyperStrike_Shot_01");
 
             if (!bCustomSuperPlayed)
