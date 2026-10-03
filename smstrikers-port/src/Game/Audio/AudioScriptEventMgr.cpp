@@ -564,6 +564,13 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
     {
         ShotAtGoalData* pData;
         pEvent->GetData(&pData);
+        // PORT: sfx/SFXCHAR_HyperStrike_Charge_01.wav - this fires right as
+        // the Shoot-to-Score ("Super Strike") windup begins and the sim
+        // drops into its slow-mo meter (FixedUpdateTask::mTimeScale is set
+        // a few lines above the call site that raises this event), whether
+        // or not the shooter ends up landing the perfect/Hyper result -
+        // PlayFixed so it tracks that slow-mo without crawling to a halt.
+        PortCustomSFXPlayFixed("SFXCHAR_HyperStrike_Charge_01");
         if (pData->pShooter->IsCaptain())
         {
             AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_CaptainS2S,
@@ -587,6 +594,12 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
     {
         ShotAtGoalData* pData;
         pEvent->GetData(&pData);
+        // PORT: sfx/SFXCHAR_HyperStrike_Shot_01.wav - this only fires when
+        // the Shoot-to-Score result comes back perfect (S2S_SUPER_SHOT, see
+        // DoCalcShootToScoreResult in Fielder.cpp), i.e. the actual kick
+        // that lands the Hyper/Super shot. PlayFixed for the same slow-mo
+        // cinematic reason as the charge voice line above.
+        PortCustomSFXPlayFixed("SFXCHAR_HyperStrike_Shot_01");
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_HyperStrike,
             (unsigned int)pData->pShooter->m_pTeam->m_nSide != 0 ? AudioScriptEventMgr::AET_Away : AudioScriptEventMgr::AET_Home);
         return;
