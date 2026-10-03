@@ -23,21 +23,21 @@ void PortCustomSFXInit(void);
 // decoded and started cleanly), 0 if there is no such file - so a call site
 // can fall back to the game's own sound only when nothing was dropped in.
 //
-// Follows the sim's current slow-motion time scale (see PortSimTimeScalePtr
-// in FixedUpdateTask.cpp), the same way MusyX's own group pitch does, so a
-// short one-shot sound dropped into a moment that can go into slow-mo (a
-// hit, a landing) still tracks it. For a longer voice line played across a
-// cinematic/QTE that can drop the time scale to a near-freeze (e.g. the
-// Super Strike matrix-cam), that tracking makes the clip grind to a crawl
-// instead of finishing - use PortCustomSFXPlayFixed for those instead.
+// Always plays at normal speed, regardless of the sim's current slow-motion
+// time scale (see PortSimTimeScalePtr in FixedUpdateTask.cpp). Use this for
+// ordinary one-shot drop-ins (a hit, a tackle, the ball clanging off the
+// post) that are not themselves part of a slow-mo cinematic/QTE - use
+// PortCustomSFXPlayFixed instead for a voice line played across one of
+// those (e.g. the Super Strike matrix-cam), which should still audibly
+// track that slow-mo.
 int PortCustomSFXPlay(const char* name);
 
-// Same as PortCustomSFXPlay, but never slows below half speed even if the
-// sim's time scale drops further (see kVoiceLineMinScale in custom_sfx.cpp).
-// Use this for voice lines/dialogue played across a cinematic/QTE that can
-// drop the time scale to a near-freeze (e.g. the Super Strike matrix-cam) -
-// it still audibly tracks the slow-mo, but stays intelligible instead of
-// grinding down to a crawl.
+// Same as PortCustomSFXPlay, but tracks the sim's slow-motion time scale
+// (down to half speed, never slower - see kVoiceLineMinScale in
+// custom_sfx.cpp) instead of ignoring it. Use this only at call sites that
+// are themselves part of a slow-mo cinematic/QTE (e.g. the Super Strike
+// windup/kick and the Super Strike matrix-cam) - everything else should use
+// PortCustomSFXPlay, which is immune to slow-mo entirely.
 int PortCustomSFXPlayFixed(const char* name);
 
 // Adds any currently-playing custom clips into `pcm` (interleaved, signed
