@@ -30,6 +30,7 @@ extern "C" void PortDebugFrame(void);   // PORT: defined in Game.cpp
 #include "port/config.h"
 #include "port/texture_packs.h"
 #include "port/custom_sfx.h"
+#include "port/mod_challenge.h"
 #include "Game/Audio/AudioStream.h"
 #include "Game/Sys/audio.h"
 #include "Game/Sys/clock.h"
@@ -819,6 +820,7 @@ int main(int argc, char* argv[])
 
         PortTexturesInit(info.userPath); // PORT: texture packs
 	PortCustomSFXInit(); // PORT: sfx/*.wav drop-in replacements
+	PortModChallengeInit(); // PORT: mods/challenge.txt - challenge roulette
 
         // Aurora's PAD reads SDL gamepads and reports PAD_ERR_NO_CONTROLLER when there is neither a gamepad nor a keyboard binding.
         PortInstallKeyboardBindings();
