@@ -1090,7 +1090,7 @@ static bool PortTeamHasPlayer1(cTeam* pTeam)
     for (int i = 0; i < 5; i++)
     {
         cPlayer* pPlayer = pTeam->GetPlayer(i);
-        if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL && pPlayer->GetGlobalPad()->m_padIndex == 0)
+        if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL)
             return true;
     }
     return false;

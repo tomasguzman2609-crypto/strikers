@@ -319,7 +319,7 @@ f32 cPlatPad::GetButtonStateTime(int button, bool remap)
  */
 bool cPlatPad::PlatJustReleased(int button, bool remap)
 {
-    if (m_padIndex == 0 && PortActionBlockedForPad0(button))
+    if (PortActionBlockedForPad0(button))
         return false;
 
     if (remap)
@@ -336,7 +336,7 @@ bool cPlatPad::PlatJustReleased(int button, bool remap)
  */
 bool cPlatPad::PlatJustPressed(int button, bool remap)
 {
-    if (m_padIndex == 0 && PortActionBlockedForPad0(button))
+    if (PortActionBlockedForPad0(button))
         return false;
 
     if (remap)
@@ -353,7 +353,7 @@ bool cPlatPad::PlatJustPressed(int button, bool remap)
  */
 bool cPlatPad::IsPressed(int button, bool remap)
 {
-    if (m_padIndex == 0 && PortActionBlockedForPad0(button))
+    if (PortActionBlockedForPad0(button))
         return false;
 
     if (remap != 0)

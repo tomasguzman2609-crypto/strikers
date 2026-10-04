@@ -1149,25 +1149,21 @@ extern "C" void PortDebugFrame(void)
     }
 }
 
-// PORT: Player 1 is identified by controller slot (pad index 0), not by a fixed team/player
-// pointer, since control can swap between fielders on a team - same pattern already used
-// elsewhere in this codebase (e.g. cPlayer::GetGlobalPad()->m_padIndex). Returns NULL if no team
-// currently has anyone on pad 0 (e.g. the match hasn't started, or P1 is CPU-controlled).
-static cTeam* PortFindPlayer1Team()
+ // PORT: challenge roulette - applies to every real local player, not just Player 1 (pad 0). A
+// team "has a human" if any of its player slots is bound to a cGlobalPad at all - CPU slots never
+// have one, so no separate pad-index/connection check is needed (same pattern already used
+// elsewhere in this codebase, e.g. cPlayer::GetGlobalPad()->m_padIndex).
+static bool PortTeamHasHuman(cTeam* pTeam)
 {
-    for (int side = 0; side < 2; side++)
+    if (pTeam == NULL)
+        return false;
+    for (int i = 0; i < 5; i++)
     {
-        cTeam* pTeam = g_pTeams[side];
-        if (pTeam == NULL)
-            continue;
-        for (int i = 0; i < 5; i++)
-        {
-            cPlayer* pPlayer = pTeam->GetPlayer(i);
-            if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL && pPlayer->GetGlobalPad()->m_padIndex == 0)
-                return pTeam;
-        }
+        cPlayer* pPlayer = pTeam->GetPlayer(i);
+        if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL)
+            return true;
     }
-    return NULL;
+    return false;
 }
 
 void cGame::Update(float deltaTime)
@@ -1176,24 +1172,28 @@ void cGame::Update(float deltaTime)
 
     // PORT: challenge roulette - poll mods/challenge.txt, then enforce the two challenges that
     // need a continuous per-frame nudge rather than a one-shot hook (NO_POWERUPS/INFINITE_POWERUPS
-    // act on a team's current powerup slot, which can change on its own between polls).
+    // act on a team's current powerup slot, which can change on its own between polls). Applied to
+    // both teams independently, so it affects every human-controlled team (local co-op or 2P vs).
     PortModChallengeUpdate();
     {
         int challenge = PortModChallengeGetActive();
         if (challenge == PORT_CHALLENGE_NO_POWERUPS || challenge == PORT_CHALLENGE_INFINITE_POWERUPS)
         {
-            cTeam* pP1Team = PortFindPlayer1Team();
-            if (pP1Team != NULL)
+            for (int side = 0; side < 2; side++)
             {
+                cTeam* pTeam = g_pTeams[side];
+                if (pTeam == NULL || !PortTeamHasHuman(pTeam))
+                    continue;
+
                 if (challenge == PORT_CHALLENGE_NO_POWERUPS)
                 {
-                    if (!pP1Team->IsCurrentNoPowerup())
-                        pP1Team->ClearCurrentPowerUp();
+                    if (!pTeam->IsCurrentNoPowerup())
+                        pTeam->ClearCurrentPowerUp();
                 }
                 else // PORT_CHALLENGE_INFINITE_POWERUPS
                 {
-                    if (pP1Team->IsCurrentNoPowerup())
-                        PowerupBase::AwardPowerup(pP1Team);
+                    if (pTeam->IsCurrentNoPowerup())
+                        PowerupBase::AwardPowerup(pTeam);
                 }
             }
         }

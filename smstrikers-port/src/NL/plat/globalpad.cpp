@@ -20,20 +20,21 @@ void cGlobalPad::Update(float deltaTime)
     x = this->AnalogLeftX();
     y = this->AnalogLeftY();
 
-    // PORT: challenge roulette - "inverted controls" flips Player 1's (pad 0's) movement stick on
-    // both axes, upstream of everything that reads direction/magnitude from it (AI pads never
-    // go through here at all, and pad 1+ keep their own untouched x/y).
-    if (m_padIndex == 0 && PortModChallengeGetActive() == PORT_CHALLENGE_INVERTED_CONTROLS)
+    // PORT: challenge roulette - "inverted controls" flips every real local player's movement
+    // stick on both axes, upstream of everything that reads direction/magnitude from it. This runs
+    // for all PAD_MAX_CONTROLLERS slots unconditionally (same as the rest of this function) - a
+    // slot with no physical controller plugged in just has x=y=0, so negating it is a no-op.
+    if (PortModChallengeGetActive() == PORT_CHALLENGE_INVERTED_CONTROLS)
     {
         // PORT DEBUG: set STRIKERS_DEBUG_INVERT=1 to confirm this branch is actually
         // reached at runtime, and with what raw stick values. Remove once confirmed.
         if (getenv("STRIKERS_DEBUG_INVERT") != NULL)
         {
-            static int s_count = 0;
-            if (s_count < 120) // ~2s at 60fps, so it doesn't spam forever
+            static int s_count[PAD_MAX_CONTROLLERS] = {0};
+            if (m_padIndex >= 0 && m_padIndex < PAD_MAX_CONTROLLERS && s_count[m_padIndex] < 120)
             {
-                s_count++;
-                fprintf(stderr, "[invert] pad0 raw x=%.3f y=%.3f -> x=%.3f y=%.3f\n", x, y, -x, -y);
+                s_count[m_padIndex]++;
+                fprintf(stderr, "[invert] pad%d raw x=%.3f y=%.3f -> x=%.3f y=%.3f\n", m_padIndex, x, y, -x, -y);
             }
         }
         x = -x;

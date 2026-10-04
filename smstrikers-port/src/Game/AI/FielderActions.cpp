@@ -2095,7 +2095,7 @@ void cFielder::InitActionPass(cPlayer* pPassTarget, bool bVolleyPass, bool bAllo
     // held past the trigger threshold alongside PAD_PASS). So for Player 1 specifically, force a
     // would-be cross back into a grounded pass instead of blocking PAD_PASS outright - that way
     // normal passes keep working exactly as before, only the lofted cross is taken away.
-    if (bVolleyPass && GetGlobalPad() != nullptr && GetGlobalPad()->m_padIndex == 0
+        if (bVolleyPass && GetGlobalPad() != nullptr
         && PortModChallengeGetActive() == PORT_CHALLENGE_NO_PASSES)
     {
         bVolleyPass = false;
