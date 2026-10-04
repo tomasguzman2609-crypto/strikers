@@ -1398,24 +1398,6 @@ void cFielder::InitActionElectrocution(const nlVector3& wallPosition, const nlVe
         mActionElectrocutionVars.electrocutionTime *= 2.0f;
     }
 
-    // PORT: challenge roulette - "longer electrocution" doubles how long a real local player stays
-    // stunned after hitting the stadium's electric fence. CPU-controlled fielders (GetGlobalPad()
-    // == NULL) are left at the normal 1.0s - this is a nerf to the human, not the CPU, so it does
-    // NOT use the "every real player" pattern the rest of this file uses for buffs/nerfs.
-    if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_LONG_ELECTROCUTION)
-    {
-        mActionElectrocutionVars.electrocutionTime *= 2.0f;
-    }
-
-    // PORT: challenge roulette - "longer electrocution" doubles how long a real local player stays
-    // stunned after hitting the stadium's electric fence. CPU-controlled fielders (GetGlobalPad()
-    // == NULL) are left at the normal 1.0s - this is a nerf to the human, not the CPU, so it does
-    // NOT use the "every real player" pattern the rest of this file uses for buffs/nerfs.
-    if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_LONG_ELECTROCUTION)
-    {
-        mActionElectrocutionVars.electrocutionTime *= 2.0f;
-    }
-
     nlVector3 effectPos;
     effectPos.x = wallPosition.x;
     effectPos.y = wallPosition.y;
