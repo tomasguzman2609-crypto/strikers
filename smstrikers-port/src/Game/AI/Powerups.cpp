@@ -1185,7 +1185,12 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     int nChanceForStar = ((nChanceForChainChomp) > 0 ? (nChanceForChainChomp) : 0);
     nChanceForStar = nChanceForStar + g_pGame->m_pGameTweaks->nChanceForStar - nDifference;
 
-    if (nDifference >= -1)
+    // PORT: challenge roulette - "opponent powerups" is a buff to the CPU side: a CPU-only team
+    // (no real local player on it) keeps rolling for Star/Chain Chomp even when this goal-diff
+    // cutoff would otherwise zero them out, same chances as if it were behind. Teams with a real
+    // player still go through the normal cutoff below.
+    if (nDifference >= -1
+        && !(PortModChallengeGetActive() == PORT_CHALLENGE_OPPONENT_POWERUPS && !PortTeamHasPlayer1(pTeam)))
     {
         nChanceForChainChomp = 0;
         nChanceForStar = 0;

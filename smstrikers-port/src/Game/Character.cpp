@@ -2308,6 +2308,14 @@ void cCharacter::UpdateMovementState(float fDeltaT)
                 fMaxActualSpeed *= 1.5f;
             }
         }
+        // PORT: challenge roulette - "opponent faster" is a buff to the CPU side rather than a
+        // nerf to the real player(s): every CPU-controlled fielder (GetGlobalPad() == NULL) gets a
+        // smaller 1.2x boost, milder than the 1.5x of PORT_CHALLENGE_FAST above.
+        else if (PortModChallengeGetActive() == PORT_CHALLENGE_OPPONENT_FAST)
+        {
+            fDesiredSpeed *= 1.2f;
+            fMaxActualSpeed *= 1.2f;
+        }
     }
 
     switch (m_eMovementState)

@@ -1389,6 +1389,33 @@ void cFielder::InitActionElectrocution(const nlVector3& wallPosition, const nlVe
 
     mActionElectrocutionVars.electrocutionTime = 1.0f;
 
+    // PORT: challenge roulette - "longer electrocution" doubles how long a real local player stays
+    // stunned after hitting the stadium's electric fence. CPU-controlled fielders (GetGlobalPad()
+    // == NULL) are left at the normal 1.0s - this is a nerf to the human, not the CPU, so it does
+    // NOT use the "every real player" pattern the rest of this file uses for buffs/nerfs.
+    if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_LONG_ELECTROCUTION)
+    {
+        mActionElectrocutionVars.electrocutionTime *= 2.0f;
+    }
+
+    // PORT: challenge roulette - "longer electrocution" doubles how long a real local player stays
+    // stunned after hitting the stadium's electric fence. CPU-controlled fielders (GetGlobalPad()
+    // == NULL) are left at the normal 1.0s - this is a nerf to the human, not the CPU, so it does
+    // NOT use the "every real player" pattern the rest of this file uses for buffs/nerfs.
+    if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_LONG_ELECTROCUTION)
+    {
+        mActionElectrocutionVars.electrocutionTime *= 2.0f;
+    }
+
+    // PORT: challenge roulette - "longer electrocution" doubles how long a real local player stays
+    // stunned after hitting the stadium's electric fence. CPU-controlled fielders (GetGlobalPad()
+    // == NULL) are left at the normal 1.0s - this is a nerf to the human, not the CPU, so it does
+    // NOT use the "every real player" pattern the rest of this file uses for buffs/nerfs.
+    if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_LONG_ELECTROCUTION)
+    {
+        mActionElectrocutionVars.electrocutionTime *= 2.0f;
+    }
+
     nlVector3 effectPos;
     effectPos.x = wallPosition.x;
     effectPos.y = wallPosition.y;
@@ -1474,6 +1501,16 @@ void cFielder::ActionElectrocution(float dt)
 void cFielder::InitActionHit(cFielder* pTarget)
 {
     if (IsFrozen())
+    {
+        return;
+    }
+
+    // PORT: challenge roulette - "Sin Tackles" blocks the shoulder-charge hit (this function) for
+    // every real local player, distinct from the slide ("Barrida Nerfeada", InitActionSlideAttack
+    // isn't touched by this one). Both human input and CPU AI funnel through this single init
+    // function, same pattern as the slide/pass/tackle challenges elsewhere in this codebase. A
+    // non-NULL GetGlobalPad() already means human-controlled, so no pad-index check is needed.
+    if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_NO_HITS)
     {
         return;
     }
