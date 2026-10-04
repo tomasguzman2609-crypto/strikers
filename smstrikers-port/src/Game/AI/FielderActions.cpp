@@ -1510,20 +1510,6 @@ void cFielder::InitActionHit(cFielder* pTarget)
                 PortModChallengeGetActive(),
                 (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_NO_HITS) ? 1 : 0);
     }
-    if (getenv("STRIKERS_DEBUG_CHALLENGE") != NULL)
-    {
-        fprintf(stderr, "[hit] pad=%p padIndex=%d activeChallenge=%d willBlock=%d\n",
-                (void*)GetGlobalPad(), GetGlobalPad() ? GetGlobalPad()->m_padIndex : -1,
-                PortModChallengeGetActive(),
-                (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_NO_HITS) ? 1 : 0);
-    }
-    if (getenv("STRIKERS_DEBUG_CHALLENGE") != NULL)
-    {
-        fprintf(stderr, "[hit] pad=%p padIndex=%d activeChallenge=%d willBlock=%d\n",
-                (void*)GetGlobalPad(), GetGlobalPad() ? GetGlobalPad()->m_padIndex : -1,
-                PortModChallengeGetActive(),
-                (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_NO_HITS) ? 1 : 0);
-    }
     if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_NO_HITS)
     {
         return;
