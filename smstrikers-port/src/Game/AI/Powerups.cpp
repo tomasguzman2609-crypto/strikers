@@ -1189,8 +1189,14 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     // (no real local player on it) keeps rolling for Star/Chain Chomp even when this goal-diff
     // cutoff would otherwise zero them out, same chances as if it were behind. Teams with a real
     // player still go through the normal cutoff below.
-    if (nDifference >= -1
-        && !(PortModChallengeGetActive() == PORT_CHALLENGE_OPPONENT_POWERUPS && !PortTeamHasPlayer1(pTeam)))
+    if (PortModChallengeGetActive() == PORT_CHALLENGE_OPPONENT_POWERUPS && !PortTeamHasPlayer1(pTeam))
+    {
+        // Also actually raise the chances themselves (not just skip the cutoff above), so the CPU
+        // noticeably rolls Star/Chain Chomp more often while this challenge is active.
+        nChanceForChainChomp += g_pGame->m_pGameTweaks->nChanceForChainChomp;
+        nChanceForStar += g_pGame->m_pGameTweaks->nChanceForStar;
+    }
+    else if (nDifference >= -1)
     {
         nChanceForChainChomp = 0;
         nChanceForStar = 0;

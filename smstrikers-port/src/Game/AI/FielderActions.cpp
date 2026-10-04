@@ -1,6 +1,9 @@
 #include "Game/AI/FielderActions.h"
 #include "port/custom_sfx.h"
 #include "port/mod_challenge.h"
+
+#include <cstdio>
+#include <cstdlib>
 #include "Game/Camera/CameraMan.h"
 #include "Game/Camera/animcam.h"
 #include "Game/Camera/rumblefilter.h"
@@ -1398,6 +1401,14 @@ void cFielder::InitActionElectrocution(const nlVector3& wallPosition, const nlVe
         mActionElectrocutionVars.electrocutionTime *= 2.0f;
     }
 
+    // PORT DEBUG: set STRIKERS_DEBUG_CHALLENGE=1 to confirm whether this hook ran and what it did.
+    if (getenv("STRIKERS_DEBUG_CHALLENGE") != NULL)
+    {
+        fprintf(stderr, "[electrocution] pad=%p padIndex=%d activeChallenge=%d finalTime=%.2f\n",
+                (void*)GetGlobalPad(), GetGlobalPad() ? GetGlobalPad()->m_padIndex : -1,
+                PortModChallengeGetActive(), mActionElectrocutionVars.electrocutionTime);
+    }
+
     nlVector3 effectPos;
     effectPos.x = wallPosition.x;
     effectPos.y = wallPosition.y;
@@ -1492,6 +1503,27 @@ void cFielder::InitActionHit(cFielder* pTarget)
     // isn't touched by this one). Both human input and CPU AI funnel through this single init
     // function, same pattern as the slide/pass/tackle challenges elsewhere in this codebase. A
     // non-NULL GetGlobalPad() already means human-controlled, so no pad-index check is needed.
+    if (getenv("STRIKERS_DEBUG_CHALLENGE") != NULL)
+    {
+        fprintf(stderr, "[hit] pad=%p padIndex=%d activeChallenge=%d willBlock=%d\n",
+                (void*)GetGlobalPad(), GetGlobalPad() ? GetGlobalPad()->m_padIndex : -1,
+                PortModChallengeGetActive(),
+                (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_NO_HITS) ? 1 : 0);
+    }
+    if (getenv("STRIKERS_DEBUG_CHALLENGE") != NULL)
+    {
+        fprintf(stderr, "[hit] pad=%p padIndex=%d activeChallenge=%d willBlock=%d\n",
+                (void*)GetGlobalPad(), GetGlobalPad() ? GetGlobalPad()->m_padIndex : -1,
+                PortModChallengeGetActive(),
+                (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_NO_HITS) ? 1 : 0);
+    }
+    if (getenv("STRIKERS_DEBUG_CHALLENGE") != NULL)
+    {
+        fprintf(stderr, "[hit] pad=%p padIndex=%d activeChallenge=%d willBlock=%d\n",
+                (void*)GetGlobalPad(), GetGlobalPad() ? GetGlobalPad()->m_padIndex : -1,
+                PortModChallengeGetActive(),
+                (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_NO_HITS) ? 1 : 0);
+    }
     if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_NO_HITS)
     {
         return;
