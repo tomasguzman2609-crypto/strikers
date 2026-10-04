@@ -28,6 +28,9 @@ extern "C" {
 //     shot) and should be labeled "Modo Globito" in the companion app.
 //   - PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU (14) shortens the CPU's stun time on the electric
 //     fence to 0.15s and should be labeled "Shocks Cortos" in the companion app.
+//   - PORT_CHALLENGE_OPPONENT_DOUBLE_GOALS (15) doubles however many goals a CPU-only team's goal
+//     is worth (1 -> 2 for a normal goal, 2 -> 4 for a Super Strike) and should be labeled
+//     "Gol Doble Rival" in the companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -45,6 +48,7 @@ enum ePortChallenge
     PORT_CHALLENGE_LONG_ELECTROCUTION = 12, // a real player stunned by the stadium's electric fence stays stunned twice as long (CPU unaffected)
     PORT_CHALLENGE_ONLY_CHIP_SHOTS = 13,    // every real player's shot on goal is forced to be a lobbed "globito" (chip shot) - "Modo Globito"
     PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU = 14, // a CPU-controlled fielder stunned by the electric fence only stays stunned 0.15s (real players unaffected) - "Shocks Cortos"
+    PORT_CHALLENGE_OPPONENT_DOUBLE_GOALS = 15,   // a CPU-only team's goal is worth double (normal goal counts as 2, a Super Strike counts as 4) - "Gol Doble Rival"
 };
 
 // Locates the mods/ folder beside the executable. Cheap even if it is missing; the challenge file

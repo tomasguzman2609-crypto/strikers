@@ -514,6 +514,10 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
     ReplayManager::Instance()->ResetSnapshots();
 }
 
+// PORT: forward declaration - PortTeamHasHuman is defined further down in this file (next to
+// cGame::Update, which also uses it), but CheckForGoal (right below) needs it too and comes first.
+static bool PortTeamHasHuman(cTeam* pTeam);
+
 /**
  * Offset/Address/Size: 0xE5C | 0x8003D3D0 | size: 0x2E0
  */
@@ -595,6 +599,14 @@ void cGame::CheckForGoal()
             else
             {
                 uNumGoalsScored = 1;
+            }
+
+            // PORT: challenge roulette - "Gol Doble Rival" doubles whatever a CPU-only team's goal
+            // was already worth: a normal goal (1) becomes 2, and a Super Strike (already 2)
+            // becomes 4. Teams with a real local player on them are unaffected.
+            if (PortModChallengeGetActive() == PORT_CHALLENGE_OPPONENT_DOUBLE_GOALS && !PortTeamHasHuman(g_pTeams[nSide]))
+            {
+                uNumGoalsScored *= 2;
             }
 
             g_pTeams[nSide]->m_nScore += uNumGoalsScored;
