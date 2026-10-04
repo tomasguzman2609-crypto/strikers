@@ -2,6 +2,9 @@
 #include "NL/nlMath.h"
 #include "port/mod_challenge.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 cGlobalPad* cPadManager::m_aPads[PAD_MAX_CONTROLLERS];
 s32* cPadManager::m_pRemapArray = nullptr;
 float cPadManager::m_DeltaT = 0.0f;
@@ -22,6 +25,17 @@ void cGlobalPad::Update(float deltaTime)
     // go through here at all, and pad 1+ keep their own untouched x/y).
     if (m_padIndex == 0 && PortModChallengeGetActive() == PORT_CHALLENGE_INVERTED_CONTROLS)
     {
+        // PORT DEBUG: set STRIKERS_DEBUG_INVERT=1 to confirm this branch is actually
+        // reached at runtime, and with what raw stick values. Remove once confirmed.
+        if (getenv("STRIKERS_DEBUG_INVERT") != NULL)
+        {
+            static int s_count = 0;
+            if (s_count < 120) // ~2s at 60fps, so it doesn't spam forever
+            {
+                s_count++;
+                fprintf(stderr, "[invert] pad0 raw x=%.3f y=%.3f -> x=%.3f y=%.3f\n", x, y, -x, -y);
+            }
+        }
         x = -x;
         y = -y;
     }
