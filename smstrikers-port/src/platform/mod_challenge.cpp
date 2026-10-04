@@ -48,7 +48,7 @@ void WriteFile(const char* content)
 int ParseChallenge(const std::string& content)
 {
     int value = atoi(content.c_str());
-    if (value < PORT_CHALLENGE_NONE || value > PORT_CHALLENGE_LONG_ELECTROCUTION)
+    if (value < PORT_CHALLENGE_NONE || value > PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU)
         return PORT_CHALLENGE_NONE;
     return value;
 }

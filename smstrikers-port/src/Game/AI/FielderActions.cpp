@@ -1401,6 +1401,22 @@ void cFielder::InitActionElectrocution(const nlVector3& wallPosition, const nlVe
         mActionElectrocutionVars.electrocutionTime *= 2.0f;
     }
 
+    // PORT: challenge roulette - "Shocks Cortos" shortens how long a CPU-controlled fielder stays
+    // stunned after hitting the electric fence (0.15s instead of the normal 1.0s). Real local
+    // players are unaffected - same "CPU only" shape as PORT_CHALLENGE_OPPONENT_FAST.
+    if (GetGlobalPad() == NULL && PortModChallengeGetActive() == PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU)
+    {
+        mActionElectrocutionVars.electrocutionTime = 0.15f;
+    }
+
+    // PORT: challenge roulette - "Shocks Cortos" shortens how long a CPU-controlled fielder stays
+    // stunned after hitting the electric fence (0.15s instead of the normal 1.0s). Real local
+    // players are unaffected - same "CPU only" shape as PORT_CHALLENGE_OPPONENT_FAST.
+    if (GetGlobalPad() == NULL && PortModChallengeGetActive() == PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU)
+    {
+        mActionElectrocutionVars.electrocutionTime = 0.15f;
+    }
+
     // PORT DEBUG: set STRIKERS_DEBUG_CHALLENGE=1 to confirm whether this hook ran and what it did.
     if (getenv("STRIKERS_DEBUG_CHALLENGE") != NULL)
     {
@@ -2749,6 +2765,15 @@ void cFielder::InitActionShot(bool bIsChipShot)
 
     InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
     SetAction(ACTION_SHOT);
+
+    // PORT: challenge roulette - "Modo Globito" forces every shot on goal into a chip shot (the
+    // same lobbed "globito" you'd normally only get by holding the aim button), for every real
+    // local player. This overrides the caller's choice right here in the single shared
+    // InitActionShot entry point, so it doesn't matter which input path triggered the shot.
+    if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_ONLY_CHIP_SHOTS)
+    {
+        bIsChipShot = true;
+    }
 
     mActionShotVars.bIsChipShot = bIsChipShot;
 

@@ -24,6 +24,10 @@ extern "C" {
 //   - PORT_CHALLENGE_NO_HITS (9) is new: it blocks the shoulder-charge hit (ACTION_HIT, a
 //     different button/move than the slide) and should be labeled "Sin Tackles" in the companion
 //     app.
+//   - PORT_CHALLENGE_ONLY_CHIP_SHOTS (13) forces every shot on goal into a lobbed "globito" (chip
+//     shot) and should be labeled "Modo Globito" in the companion app.
+//   - PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU (14) shortens the CPU's stun time on the electric
+//     fence to 0.15s and should be labeled "Shocks Cortos" in the companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -37,8 +41,10 @@ enum ePortChallenge
     PORT_CHALLENGE_NO_TACKLES = 8,          // every real player's slide (ACTION_SLIDE_ATTACK) is blocked - "Barrida Nerfeada"
     PORT_CHALLENGE_NO_HITS = 9,             // every real player's shoulder-charge hit (ACTION_HIT) is blocked - "Sin Tackles"
     PORT_CHALLENGE_OPPONENT_FAST = 10,      // every CPU-controlled fielder moves at 1.2x speed (a buff to the opponent, not a nerf to P1)
-    PORT_CHALLENGE_OPPONENT_POWERUPS = 11,  // CPU teams can roll Star/Chain Chomp regardless of the current goal difference
+    PORT_CHALLENGE_OPPONENT_POWERUPS = 11,  // CPU teams can roll Star/Chain Chomp regardless of the current goal difference, at a raised chance
     PORT_CHALLENGE_LONG_ELECTROCUTION = 12, // a real player stunned by the stadium's electric fence stays stunned twice as long (CPU unaffected)
+    PORT_CHALLENGE_ONLY_CHIP_SHOTS = 13,    // every real player's shot on goal is forced to be a lobbed "globito" (chip shot) - "Modo Globito"
+    PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU = 14, // a CPU-controlled fielder stunned by the electric fence only stays stunned 0.15s (real players unaffected) - "Shocks Cortos"
 };
 
 // Locates the mods/ folder beside the executable. Cheap even if it is missing; the challenge file
