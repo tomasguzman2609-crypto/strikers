@@ -1996,6 +1996,13 @@ void cFielder::InitActionLooseBallShot(bool bIsChipShot)
     InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
     SetAction(ACTION_LOOSE_BALL_SHOT);
 
+    // PORT: challenge roulette - "Modo Globito" also covers shooting a loose/rebounding ball,
+    // another separate code path with its own bIsChipShot - same bypass risk as the one-timer.
+    if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_ONLY_CHIP_SHOTS)
+    {
+        bIsChipShot = true;
+    }
+
     mActionLooseBallShotVars.bIsChipShot = bIsChipShot;
 
     DoCommonInitActionLooseBall(m_pTeam->GetOtherNet()->m_v3NetLocation);
@@ -2027,6 +2034,16 @@ void cFielder::InitActionOneTimer(int animID, nlVector3& targetPos, float fAdjus
 
     if (((u32)animID - 0x48) > 7)
     {
+        // PORT: challenge roulette - "Modo Globito" also covers the one-timer (the one-touch shot
+        // you get by pressing shoot right as a pass arrives, including a buffered press). This is
+        // a separate code path from InitActionShot with its own bIsChipShot decision, so it needs
+        // its own copy of the same override - otherwise this was a bypass. Only applies when the
+        // animation range above already allows a chip one-timer at all (the else branch below is
+        // an animation restriction, not a player choice, and is left alone).
+        if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_ONLY_CHIP_SHOTS)
+        {
+            bIsChipShot = true;
+        }
         mActionShotVars.bIsChipShot = bIsChipShot;
     }
     else
