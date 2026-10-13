@@ -2,6 +2,7 @@
 #include "port/custom_sfx.h"
 #include "port/mod_challenge.h"
 #include "Game/AI/ShockFantasma.h"
+#include "Game/AchievementHooks.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -1415,6 +1416,8 @@ void cFielder::InitActionElectrocution(const nlVector3& wallPosition, const nlVe
     // shock itself still plays out normally, so the player sees what happened); the elimination
     // happens at the explosion in ActionElectrocution. CPU-only teams are unaffected.
     PortShockFantasmaOnElectrocuted(this);
+    // PORT: challenge roulette - achievements ("Electricista" counts the opposing captain's shocks).
+    PortAchievementHooksElectrocuted(this);
 
     // PORT DEBUG: set STRIKERS_DEBUG_CHALLENGE=1 to confirm whether this hook ran and what it did.
     if (getenv("STRIKERS_DEBUG_CHALLENGE") != NULL)
@@ -1666,12 +1669,17 @@ static void PortElectrocuteFromTackle(cFielder* pVictim, cPlayer* pAttacker)
 
 bool cFielder::InitActionHitReact(cPlayer* pAttacker, unsigned short desiredFacingDirection, bool bDoFrameLock)
 {
-    CleanUpPowerupEffect();
-
     if (IsFallenDown(0.0f))
     {
+        CleanUpPowerupEffect();
         return false;
     }
+
+    // PORT: challenge roulette - achievements count tackles; read the victim's state (e.g. a shot
+    // being charged) before anything below changes it.
+    PortAchievementHooksTackle(this, pAttacker);
+
+    CleanUpPowerupEffect();
 
     if (IsFrozen())
     {
@@ -2060,6 +2068,8 @@ void cFielder::InitActionLooseBallShot(bool bIsChipShot)
     }
 
     mActionLooseBallShotVars.bIsChipShot = bIsChipShot;
+    // PORT: challenge roulette - lets a goal from this shot count as a "globito" for achievements.
+    PortAchievementHooksNoteShot(this, bIsChipShot);
 
     DoCommonInitActionLooseBall(m_pTeam->GetOtherNet()->m_v3NetLocation);
 
@@ -2106,6 +2116,8 @@ void cFielder::InitActionOneTimer(int animID, nlVector3& targetPos, float fAdjus
     {
         mActionShotVars.bIsChipShot = false;
     }
+    // PORT: challenge roulette - lets a goal from this shot count as a "globito" for achievements.
+    PortAchievementHooksNoteShot(this, mActionShotVars.bIsChipShot);
 
     SetAction(ACTION_ONETIMER);
     mActionOneTimerVars.fOneTimerAnimTime = fAdjustEndTime;
@@ -2841,6 +2853,8 @@ void cFielder::InitActionShot(bool bIsChipShot)
     }
 
     mActionShotVars.bIsChipShot = bIsChipShot;
+    // PORT: challenge roulette - lets a goal from this shot count as a "globito" for achievements.
+    PortAchievementHooksNoteShot(this, bIsChipShot);
 
     switch (m_eAnimID)
     {
@@ -4276,6 +4290,13 @@ void cFielder::DoSlideAttackStats()
  */
 void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
 {
+    // PORT: challenge roulette - achievements count tackles; read the victim's state before
+    // CleanUpPowerupEffect and the rest change it.
+    if (!IsFallenDown(0.0f))
+    {
+        PortAchievementHooksTackle(this, pAttacker);
+    }
+
     CleanUpPowerupEffect();
 
     if (!IsFallenDown(0.0f))

@@ -119,6 +119,7 @@ Game/AI/SpaceSearch.cpp
 Game/AI/StatsGatherer.cpp
 Game/AI/Variant.cpp
 Game/AIPad.cpp
+Game/AchievementHooks.cpp
 Game/AnimInventory.cpp
 Game/AnimProps/globalanimproperties.cpp
 Game/AnimProps/goalieanimproperties.cpp

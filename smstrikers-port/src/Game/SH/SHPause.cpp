@@ -1,3 +1,4 @@
+#include "port/achievements.h"
 #include "Game/SH/SHPause.h"
 #include "Game/OverlayManager.h"
 #include "Game/SH/SHLessonSelect.h"
@@ -420,6 +421,9 @@ void PauseMenuScene::SceneCreated()
  */
 void PauseMenuScene::Update(float fDeltaT)
 {
+    // PORT: challenge roulette - the overlay shows the match's achievements while this menu updates.
+    PortAchievementsNotePauseFrame();
+
     if (mQuitDelay > 0.0f)
     {
         mQuitDelay = mQuitDelay - fDeltaT;

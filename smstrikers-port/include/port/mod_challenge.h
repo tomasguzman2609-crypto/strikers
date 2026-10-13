@@ -47,7 +47,7 @@ extern "C" {
 //     fielder of a team with a real local player. Should be labeled "Bowser Agresivo" in the
 //     companion app. Still needs Bowser attacks enabled in the match options.
 //   - PORT_CHALLENGE_HOT_POTATO (20) blows up any fielder of a team with a real local player who
-//     keeps the ball for more than 1.5s: an explosion, a bomb knockdown, and the ball goes loose.
+//     keeps the ball for more than 2s: an explosion, a bomb knockdown, and the ball goes loose.
 //     Should be labeled "Papa Caliente" in the companion app.
 //   - PORT_CHALLENGE_ELECTRIC_TACKLES (21) turns a CPU-only team's successful tackles - both the
 //     shoulder charge (ACTION_HIT) and the slide (ACTION_SLIDE_ATTACK) - on a fielder of a team with a
@@ -79,7 +79,7 @@ enum ePortChallenge
     PORT_CHALLENGE_SELFISH_CAPTAIN = 17,         // on a human team only the captain can shoot at goal; the shoot button does nothing for anyone else - "Capitán Egoísta"
     PORT_CHALLENGE_OPPONENT_LEAD_LOSES = 18,     // the match ends immediately (a loss) as soon as a CPU-only team leads a human team - "Ventaja Oponente = Perdiste"
     PORT_CHALLENGE_AGGRESSIVE_BOWSER = 19,       // Bowser comes far more often and lands on a human team's ball carrier - "Bowser Agresivo"
-    PORT_CHALLENGE_HOT_POTATO = 20,              // a human team's fielder holding the ball over 1.5s explodes and loses it - "Papa Caliente"
+    PORT_CHALLENGE_HOT_POTATO = 20,              // a human team's fielder holding the ball over 2s explodes and loses it - "Papa Caliente"
     PORT_CHALLENGE_ELECTRIC_TACKLES = 21,        // a CPU team's hit or slide on a human team's fielder electrocutes them like the fence - "Tackles Eléctricos"
     PORT_CHALLENGE_ROTATING_CURSE = 22,          // meta: a random other challenge, re-drawn at kickoff and after every goal - "Maldición Rotativa"
 

@@ -3,6 +3,7 @@
 #include "Game/Sys/eventman.h"
 #include "Game/Team.h"
 #include "Game/AI/Fielder.h"
+#include "Game/AchievementHooks.h"
 #include "Game/AI/SelfishCaptain.h"
 #include "Game/CharacterTriggers.h"
 #include "Game/AI/ShockFantasma.h"
@@ -467,6 +468,8 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
     PortShockFantasmaReset();
     // PORT: challenge roulette - "Maldición Rotativa" draws a fresh challenge for each new match.
     PortModChallengeReroll();
+    // PORT: challenge roulette - this match's two achievements.
+    PortAchievementHooksBeginMatch();
 
     if (m_eGameState != GS_PRE_GAME)
     {
@@ -621,6 +624,10 @@ void cGame::CheckForGoal()
             }
 
             g_pTeams[nSide]->m_nScore += uNumGoalsScored;
+
+            // PORT: challenge roulette - achievements. m_uGoalType is still 6 for a Super Strike here
+            // (it is overwritten below).
+            PortAchievementHooksGoal(nSide, m_pScorer, g_pBall->m_uGoalType == 6, GetGameTime());
 
             // PORT: challenge roulette - "Ventaja Oponente = Perdiste": a CPU-only team going ahead
             // of a human team ends the match right here, exactly like a goal in sudden-death
@@ -1215,14 +1222,14 @@ static bool PortTeamHasHuman(cTeam* pTeam)
 }
 
 // PORT: challenge roulette - "Papa Caliente": the ball carrier, if a fielder of a team with a real
-// local player, explodes after holding the ball for more than 1.5s - the fence's explosion effect plus
+// local player, explodes after holding the ball for more than 2s - the fence's explosion effect plus
 // a point-blank bomb knockdown, which already drops the ball and knocks it loose. Every fielder of the
 // team counts (AI sidekicks too), not just the one being controlled; goalies are exempt, since they
 // have to hold the ball before every clearance. Skipped mid Super Strike, which has its own long
 // cinematic hold.
 static void PortHotPotatoUpdate()
 {
-    const float kMaxHoldSeconds = 1.5f;
+    const float kMaxHoldSeconds = 2.0f;
 
     cFielder* pCarrier = g_pBall->GetOwnerFielder();
     if (pCarrier == NULL || !PortTeamHasHuman(pCarrier->m_pTeam))
@@ -1737,6 +1744,8 @@ void cGame::InitGameState(eGameState state)
         // offer another spin for the next one. InitGameState only runs this case body once per
         // transition into GS_END_GAME (see ChangeGameState's `if (state != m_eGameState)` guard),
         // so this fires exactly once per match, not every frame.
+        // Achievements are settled first, while the challenge state is still the match's.
+        PortAchievementHooksMatchEnd();
         PortModChallengeClear();
         break;
 

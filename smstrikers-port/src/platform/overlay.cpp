@@ -12,6 +12,7 @@
 #include "port/input.h"
 #include "port/launch.h"
 #include "port/mod_challenge.h"
+#include "port/achievements.h"
 #include "port/texture_packs.h"
 
 #include <cstdio>
@@ -1858,13 +1859,123 @@ void queue_scripted_commands(unsigned long frame)
 
 }   // namespace
 
-// PORT: challenge roulette - the active challenge, on screen, for every player rather than only with
-// the debug overlay on: a small tag at the bottom centre (the game's own scoreboard is at the top)
-// for the whole match, and a large notice in the middle for a few seconds whenever the challenge
-// changes - which under "Maldición Rotativa" is at kickoff and after every goal. Shown only while a
-// match is being updated (cGame::Update counts its frames), so not over menus, loading or pause.
+// PORT: challenge roulette - the active challenge and this match's achievements, on screen for every
+// player rather than only with the debug overlay on, kept small so the match itself stays readable:
+//   - a tag at the bottom centre (the game's scoreboard is at the top) with the challenge and an
+//     achievements counter, for the whole match;
+//   - under "Maldición Rotativa" only, a large notice in the middle for one second whenever it draws a
+//     new challenge (at kickoff and after every goal);
+//   - for the first seconds of a match, which two achievements are up; then a short notice above the
+//     tag when one is won or lost;
+//   - the full achievement list, with progress, while the pause menu is open.
+// The in-match parts show only while cGame::Update is running (it counts its frames through
+// PortModChallengeNoteMatchFrame), so never over menus or loading screens.
+namespace
+{
+
+const ImVec4 kGold(1.0f, 0.83f, 0.23f, 1.0f);
+const ImVec4 kGreen(0.45f, 0.9f, 0.45f, 1.0f);
+const ImVec4 kGrey(0.65f, 0.65f, 0.65f, 1.0f);
+const ImGuiWindowFlags kBannerFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                                      ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                                      ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+
+// ImGui's built-in font is 13px; grow it with the window so it stays readable at 1080p and up.
+float BannerScale(void)
+{
+    const ImGuiIO& io = ImGui::GetIO();
+    return io.DisplaySize.y > 720.0f ? io.DisplaySize.y / 720.0f : 1.0f;
+}
+
+int CountDone(void)
+{
+    int done = 0;
+    for (int i = 0; i < PortAchievementsCount(); i++)
+    {
+        PortAchievementView view;
+        PortAchievementsGet(i, &view);
+        if (view.state == PORT_ACH_DONE)
+            done++;
+    }
+    return done;
+}
+
+// A one-line notice above the bottom tag, faded out over its last half second.
+void DrawStackedNotice(const char* id, int row, double until, double now, const ImVec4& colour, const char* text)
+{
+    if (now >= until)
+        return;
+    const ImGuiIO& io = ImGui::GetIO();
+    const float scale = BannerScale();
+    const float left = (float)(until - now);
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, left < 0.5f ? left / 0.5f : 1.0f);
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y - (36.0f + 30.0f * (float)row) * scale),
+                            ImGuiCond_Always, ImVec2(0.5f, 1.0f));
+    ImGui::SetNextWindowBgAlpha(0.6f);
+    if (ImGui::Begin(id, nullptr, kBannerFlags))
+    {
+        ImGui::SetWindowFontScale(1.4f * scale);
+        ImGui::TextColored(colour, "%s", text);
+    }
+    ImGui::End();
+    ImGui::PopStyleVar();
+}
+
+void DrawPauseAchievements(void)
+{
+    const int count = PortAchievementsCount();
+    if (count == 0)
+        return;
+    const ImGuiIO& io = ImGui::GetIO();
+    const float scale = BannerScale();
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 16.0f * scale, io.DisplaySize.y * 0.5f), ImGuiCond_Always,
+                            ImVec2(1.0f, 0.5f));
+    ImGui::SetNextWindowBgAlpha(0.8f);
+    if (ImGui::Begin("##achievements_pause", nullptr, kBannerFlags))
+    {
+        ImGui::SetWindowFontScale(1.6f * scale);
+        ImGui::TextColored(kGold, "LOGROS DEL PARTIDO  (%d/%d)", CountDone(), count);
+        ImGui::SetWindowFontScale(1.3f * scale);
+        for (int i = 0; i < count; i++)
+        {
+            PortAchievementView view;
+            PortAchievementsGet(i, &view);
+            const char* mark = view.state == PORT_ACH_DONE ? "[OK]" : (view.state == PORT_ACH_FAILED ? "[X] " : "[  ]");
+            const ImVec4 colour = view.state == PORT_ACH_DONE ? kGreen : (view.state == PORT_ACH_FAILED ? kGrey : kGold);
+            ImGui::Separator();
+            if (view.target > 1)
+                ImGui::TextColored(colour, "%s %s   %d/%d", mark, view.name, view.progress, view.target);
+            else
+                ImGui::TextColored(colour, "%s %s", mark, view.name);
+            ImGui::TextUnformatted(view.description);
+        }
+    }
+    ImGui::End();
+}
+
+} // namespace
+
 static void DrawChallengeBanner(void)
 {
+    static unsigned int s_lastPauseFrame = 0;
+    static int s_framesSincePause = 1000;
+    const unsigned int pauseFrame = PortAchievementsPauseFrameCount();
+    if (pauseFrame != s_lastPauseFrame)
+    {
+        s_lastPauseFrame = pauseFrame;
+        s_framesSincePause = 0;
+    }
+    else if (s_framesSincePause < 1000)
+    {
+        s_framesSincePause++;
+    }
+    // A little slack: the overlay can draw more frames than the menu updates (uncapped frame rate).
+    if (s_framesSincePause <= 10)
+    {
+        DrawPauseAchievements();
+        return;
+    }
+
     static unsigned int s_lastMatchFrame = 0;
     static int s_framesSinceMatch = 1000;
     const unsigned int matchFrame = PortModChallengeMatchFrameCount();
@@ -1878,57 +1989,126 @@ static void DrawChallengeBanner(void)
         s_framesSinceMatch++;
     }
 
-    static int s_shown = PORT_CHALLENGE_NONE;
-    static double s_noticeUntil = 0.0;
-    const int active = PortModChallengeGetActive();
-    if (s_framesSinceMatch > 30 || active == PORT_CHALLENGE_NONE)
+    // Per-match notice state, forgotten whenever no match is running so it all replays next match.
+    static bool s_inMatch = false;
+    static int s_shownChallenge = PORT_CHALLENGE_NONE;
+    static double s_curseNoticeUntil = 0.0;
+    static double s_achIntroUntil = 0.0;
+    static const char* s_achNames[2] = { nullptr, nullptr };
+    static int s_achStates[2] = { PORT_ACH_PENDING, PORT_ACH_PENDING };
+    static double s_achNoticeUntil[2] = { 0.0, 0.0 };
+
+    if (s_framesSinceMatch > 30)
     {
-        // Forget it, so the notice plays again when the next match starts.
-        s_shown = PORT_CHALLENGE_NONE;
+        s_inMatch = false;
         return;
     }
 
-    const bool rotating = PortModChallengeGetSelected() == PORT_CHALLENGE_ROTATING_CURSE;
-    const char* name = PortModChallengeName(active);
     const double now = ImGui::GetTime();
-    if (active != s_shown)
+    const int achCount = PortAchievementsCount();
+    if (!s_inMatch)
     {
-        s_shown = active;
-        s_noticeUntil = now + 4.0;
+        s_inMatch = true;
+        s_shownChallenge = PORT_CHALLENGE_NONE;
+        s_achIntroUntil = achCount > 0 ? now + 6.0 : 0.0;
+        s_achNames[0] = s_achNames[1] = nullptr;
     }
 
-    const ImGuiIO& io = ImGui::GetIO();
-    // ImGui's built-in font is 13px; grow it with the window so it stays readable at 1080p and up.
-    const float scale = io.DisplaySize.y > 720.0f ? io.DisplaySize.y / 720.0f : 1.0f;
-    const ImVec4 gold(1.0f, 0.83f, 0.23f, 1.0f);
-    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
-                                   ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-                                   ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+    // Achievement transitions. A new draw (different names) resets the tracking rather than notifying.
+    for (int i = 0; i < 2; i++)
+    {
+        PortAchievementView view;
+        PortAchievementsGet(i, &view);
+        if (i >= achCount)
+            view.name = nullptr;
+        if (view.name != s_achNames[i])
+        {
+            s_achNames[i] = view.name;
+            s_achStates[i] = view.state;
+            s_achNoticeUntil[i] = 0.0;
+            continue;
+        }
+        if (view.name != nullptr && view.state != s_achStates[i])
+        {
+            s_achStates[i] = view.state;
+            s_achNoticeUntil[i] = now + (view.state == PORT_ACH_DONE ? 3.0 : 2.5);
+        }
+    }
 
+    const int active = PortModChallengeGetActive();
+    const bool rotating = PortModChallengeGetSelected() == PORT_CHALLENGE_ROTATING_CURSE;
+    if (active != s_shownChallenge)
+    {
+        s_shownChallenge = active;
+        s_curseNoticeUntil = (rotating && active != PORT_CHALLENGE_NONE) ? now + 1.0 : 0.0;
+    }
+
+    if (active == PORT_CHALLENGE_NONE && achCount == 0)
+        return;
+
+    const ImGuiIO& io = ImGui::GetIO();
+    const float scale = BannerScale();
+
+    // The bottom tag.
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y - 6.0f * scale), ImGuiCond_Always,
                             ImVec2(0.5f, 1.0f));
     ImGui::SetNextWindowBgAlpha(0.6f);
-    if (ImGui::Begin("##challenge_tag", nullptr, flags))
+    if (ImGui::Begin("##challenge_tag", nullptr, kBannerFlags))
     {
         ImGui::SetWindowFontScale(1.5f * scale);
-        ImGui::TextColored(gold, rotating ? "Maldición Rotativa: %s" : "Reto: %s", name);
+        bool bFirst = true;
+        if (active != PORT_CHALLENGE_NONE)
+        {
+            ImGui::TextColored(kGold, rotating ? "Maldición Rotativa: %s" : "Reto: %s", PortModChallengeName(active));
+            bFirst = false;
+        }
+        if (achCount > 0)
+        {
+            if (!bFirst)
+                ImGui::SameLine(0.0f, 24.0f * scale);
+            ImGui::TextColored(CountDone() > 0 ? kGreen : kGrey, "Logros %d/%d", CountDone(), achCount);
+        }
     }
     ImGui::End();
 
-    if (now < s_noticeUntil)
+    // Stacked one-liners above the tag: the intro first, then any won/lost achievement.
+    int row = 0;
+    if (now < s_achIntroUntil && achCount == 2)
     {
-        // Fade out over the last half second.
-        const float left = (float)(s_noticeUntil - now);
-        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, left < 0.5f ? left / 0.5f : 1.0f);
+        PortAchievementView a, b;
+        PortAchievementsGet(0, &a);
+        PortAchievementsGet(1, &b);
+        char text[256];
+        std::snprintf(text, sizeof text, "Logros: %s  ·  %s   (pausa para ver detalles)", a.name, b.name);
+        DrawStackedNotice("##ach_intro", row++, s_achIntroUntil, now, kGold, text);
+    }
+    for (int i = 0; i < 2; i++)
+    {
+        if (now >= s_achNoticeUntil[i] || s_achNames[i] == nullptr)
+            continue;
+        char text[256];
+        if (s_achStates[i] == PORT_ACH_DONE)
+            std::snprintf(text, sizeof text, "¡Logro conseguido: %s!", s_achNames[i]);
+        else
+            std::snprintf(text, sizeof text, "Logro perdido: %s", s_achNames[i]);
+        DrawStackedNotice(i == 0 ? "##ach_notice0" : "##ach_notice1", row++, s_achNoticeUntil[i], now,
+                          s_achStates[i] == PORT_ACH_DONE ? kGreen : kGrey, text);
+    }
+
+    // "Maldición Rotativa" only: one second in the middle of the screen for each new draw.
+    if (now < s_curseNoticeUntil)
+    {
+        const float left = (float)(s_curseNoticeUntil - now);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, left < 0.3f ? left / 0.3f : 1.0f);
         ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.3f), ImGuiCond_Always,
                                 ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowBgAlpha(0.75f);
-        if (ImGui::Begin("##challenge_notice", nullptr, flags))
+        if (ImGui::Begin("##challenge_notice", nullptr, kBannerFlags))
         {
             ImGui::SetWindowFontScale(2.0f * scale);
-            ImGui::TextUnformatted(rotating ? "¡NUEVA MALDICIÓN!" : "RETO ACTIVO");
+            ImGui::TextUnformatted("¡NUEVA MALDICIÓN!");
             ImGui::SetWindowFontScale(3.0f * scale);
-            ImGui::TextColored(gold, "%s", name);
+            ImGui::TextColored(kGold, "%s", PortModChallengeName(active));
         }
         ImGui::End();
         ImGui::PopStyleVar();
