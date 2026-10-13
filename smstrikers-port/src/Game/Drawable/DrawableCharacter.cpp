@@ -20,6 +20,8 @@ void Replayable(SaveFrame& frame, char typeId, cPoseNode*& poseNode);
 #include "Game/Player.h"
 #include "Game/Ball.h"
 #include "Game/Team.h"
+#include "Game/AI/Fielder.h"
+#include "port/mod_challenge.h" // PORT: challenge roulette - "Shock Fantasma" invisibility
 #include "Game/AI/HeadTrack.h"
 #include "Game/PoseAccumulator.h"
 
@@ -257,6 +259,20 @@ void DrawableCharacter::Grab(cCharacter& character)
     mHeadTilt = (unsigned short)character.m_pHeadTrack->m_fHeadTilt;
     mPoseTree = character.m_pPoseTree;
     mVisible = true;
+
+    // PORT: challenge roulette - "Shock Fantasma" (PORT_CHALLENGE_VANISH_ON_ELECTROCUTION) hides a
+    // real local player while they're stunned by the electric fence. It has to live here rather
+    // than in the gameplay code because this line above re-copies mVisible = true every frame and
+    // would stomp any override set elsewhere. CPU fielders (GetGlobalPad() == NULL) stay visible.
+    if (character.m_eClassType == FIELDER)
+    {
+        cFielder& fielder = static_cast<cFielder&>(character);
+        if (fielder.m_eActionState == ACTION_ELECTROCUTION && fielder.GetGlobalPad() != NULL
+            && PortModChallengeGetActive() == PORT_CHALLENGE_VANISH_ON_ELECTROCUTION)
+        {
+            mVisible = false;
+        }
+    }
     mDirt = (unsigned char)(255.0f * character.m_Dirt);
 
     if (mPoseAccumulator == NULL)

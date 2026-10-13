@@ -1250,6 +1250,12 @@ void cFielder::CleanUpAction()
     case ACTION_ELECTROCUTION:
         m_v3Position.z = 0.0f;
         m_v3Velocity.z = 0.0f;
+        // PORT: challenge roulette - undo "Shock Fantasma" (PORT_CHALLENGE_VANISH_ON_ELECTROCUTION),
+        // which turns these off in InitActionElectrocution. Restored unconditionally (no challenge
+        // check) so a fielder can't stay non-solid if the challenge is cleared mid-stun, e.g. by
+        // PortModChallengeClear() at match end - same as ACTION_LOOSE_BALL_PASS/SHOT below.
+        m_pPhysicsCharacter->m_CanCollideWithBall = true;
+        m_pPhysicsCharacter->m_CanCollideWithWall = true;
         break;
 
     case ACTION_LOOSE_BALL_PASS:

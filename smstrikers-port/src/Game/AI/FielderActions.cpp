@@ -1409,6 +1409,18 @@ void cFielder::InitActionElectrocution(const nlVector3& wallPosition, const nlVe
         mActionElectrocutionVars.electrocutionTime = 0.15f;
     }
 
+    // PORT: challenge roulette - "Shock Fantasma" turns a real local player's electrocution stun
+    // into a ghost phase: the ball and walls pass straight through them until the stun ends, so a
+    // shock costs them any chance of blocking or winning the ball. Invisibility is applied in
+    // DrawableCharacter::Grab(), since that re-copies mVisible every frame. Both flags are restored
+    // unconditionally in cFielder::CleanUpAction's ACTION_ELECTROCUTION case. CPU fielders
+    // (GetGlobalPad() == NULL) are unaffected.
+    if (GetGlobalPad() != NULL && PortModChallengeGetActive() == PORT_CHALLENGE_VANISH_ON_ELECTROCUTION)
+    {
+        m_pPhysicsCharacter->m_CanCollideWithBall = false;
+        m_pPhysicsCharacter->m_CanCollideWithWall = false;
+    }
+
     // PORT DEBUG: set STRIKERS_DEBUG_CHALLENGE=1 to confirm whether this hook ran and what it did.
     if (getenv("STRIKERS_DEBUG_CHALLENGE") != NULL)
     {
