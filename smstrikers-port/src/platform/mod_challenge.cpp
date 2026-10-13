@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include <string>
 
 namespace
@@ -24,6 +25,45 @@ int g_activeChallenge = PORT_CHALLENGE_NONE;
 std::string g_lastContent;
 
 PortModChallengeActionFilter g_actionFilter = nullptr;
+
+// What PORT_CHALLENGE_ROTATING_CURSE has currently drawn (PORT_CHALLENGE_NONE when it isn't active).
+int g_rotatingDraw = PORT_CHALLENGE_NONE;
+
+unsigned int g_matchFrames = 0;
+
+// A private generator, so drawing a challenge doesn't advance the game's own random seed.
+unsigned int g_rng = 0;
+
+unsigned int NextRandom()
+{
+    if (g_rng == 0)
+        g_rng = (unsigned int)time(nullptr) | 1u;
+    g_rng = g_rng * 1664525u + 1013904223u;
+    return g_rng >> 8;
+}
+
+void DrawRotating()
+{
+    // Any real challenge other than the meta one itself, and not the one just drawn.
+    const int first = PORT_CHALLENGE_NONE + 1;
+    const int count = PORT_CHALLENGE_ROTATING_CURSE - first;
+    int pick;
+    do
+    {
+        pick = first + (int)(NextRandom() % (unsigned int)count);
+    } while (pick == g_rotatingDraw && count > 1);
+    g_rotatingDraw = pick;
+}
+
+// Called whenever the value read from challenge.txt changes.
+void SetSelected(int value)
+{
+    g_activeChallenge = value;
+    if (value == PORT_CHALLENGE_ROTATING_CURSE)
+        DrawRotating();
+    else
+        g_rotatingDraw = PORT_CHALLENGE_NONE;
+}
 
 bool ReadFile(std::string& out)
 {
@@ -50,7 +90,7 @@ void WriteFile(const char* content)
 int ParseChallenge(const std::string& content)
 {
     int value = atoi(content.c_str());
-    if (value < PORT_CHALLENGE_NONE || value > PORT_CHALLENGE_ELECTRIC_TACKLES)
+    if (value < PORT_CHALLENGE_NONE || value >= PORT_CHALLENGE_COUNT)
         return PORT_CHALLENGE_NONE;
     return value;
 }
@@ -75,7 +115,7 @@ extern "C" void PortModChallengeInit(void)
     if (ReadFile(content))
     {
         g_lastContent = content;
-        g_activeChallenge = ParseChallenge(content);
+        SetSelected(ParseChallenge(content));
     }
 }
 
@@ -96,12 +136,68 @@ extern "C" void PortModChallengeUpdate(void)
     if (content == g_lastContent)
         return;
     g_lastContent = content;
-    g_activeChallenge = ParseChallenge(content);
+    SetSelected(ParseChallenge(content));
 }
 
 extern "C" int PortModChallengeGetActive(void)
 {
+    if (g_activeChallenge == PORT_CHALLENGE_ROTATING_CURSE)
+        return g_rotatingDraw;
     return g_activeChallenge;
+}
+
+extern "C" int PortModChallengeGetSelected(void)
+{
+    return g_activeChallenge;
+}
+
+extern "C" void PortModChallengeReroll(void)
+{
+    if (g_activeChallenge == PORT_CHALLENGE_ROTATING_CURSE)
+        DrawRotating();
+}
+
+extern "C" const char* PortModChallengeName(int challenge)
+{
+    // UTF-8, in ID order; must match the companion app's CHALLENGES list.
+    static const char* const kNames[PORT_CHALLENGE_COUNT] = {
+        "",
+        "Solo champiñones",
+        "Controles invertidos",
+        "Sin items",
+        "Items infinitos",
+        "Velocidad reducida",
+        "Velocidad aumentada",
+        "Sin centros",
+        "Barrida Nerfeada",
+        "Sin Tackles",
+        "Rival Más Rápido",
+        "Rival con Chomps y Estrellas",
+        "Electrocución Larga",
+        "Modo Globito",
+        "Shocks Cortos",
+        "Gol Doble Rival",
+        "Shock Fatal",
+        "Capitán Egoísta",
+        "Ventaja Oponente = Perdiste",
+        "Bowser Agresivo",
+        "Papa Caliente",
+        "Tackles Eléctricos",
+        "Maldición Rotativa",
+    };
+    if (challenge <= PORT_CHALLENGE_NONE || challenge >= PORT_CHALLENGE_COUNT)
+        return "";
+    return kNames[challenge];
+}
+
+extern "C" void PortModChallengeNoteMatchFrame(void)
+{
+    g_matchFrames++;
+}
+
+extern "C" unsigned int PortModChallengeMatchFrameCount(void)
+{
+    return g_matchFrames;
 }
 
 extern "C" void PortModChallengeSetActionFilter(PortModChallengeActionFilter filter)
@@ -111,7 +207,7 @@ extern "C" void PortModChallengeSetActionFilter(PortModChallengeActionFilter fil
 
 extern "C" int PortModChallengeActionBlocked(int padIndex, int action)
 {
-    if (g_activeChallenge == PORT_CHALLENGE_NONE || g_actionFilter == nullptr)
+    if (PortModChallengeGetActive() == PORT_CHALLENGE_NONE || g_actionFilter == nullptr)
         return 0;
     return g_actionFilter(padIndex, action);
 }
@@ -119,6 +215,7 @@ extern "C" int PortModChallengeActionBlocked(int padIndex, int action)
 extern "C" void PortModChallengeClear(void)
 {
     g_activeChallenge = PORT_CHALLENGE_NONE;
+    g_rotatingDraw = PORT_CHALLENGE_NONE;
     g_lastContent = "0";
     if (g_havePath)
         WriteFile("0");

@@ -465,6 +465,8 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
 
     // PORT: challenge roulette - "Shock Fantasma" eliminations last one match only.
     PortShockFantasmaReset();
+    // PORT: challenge roulette - "Maldición Rotativa" draws a fresh challenge for each new match.
+    PortModChallengeReroll();
 
     if (m_eGameState != GS_PRE_GAME)
     {
@@ -635,6 +637,14 @@ void cGame::CheckForGoal()
                 {
                     InitGameState(GS_END_GAME);
                 }
+            }
+
+            // PORT: challenge roulette - "Maldición Rotativa": every goal draws a new challenge for
+            // the rest of the match (after the check above, which must judge this goal under the
+            // challenge it was scored under). No-op under any other challenge.
+            if (m_eGameState != GS_END_GAME)
+            {
+                PortModChallengeReroll();
             }
 
             GoalScoredDataExt* pGoalScored = new (/* PORT: m_data is at 0x18 here. */ (u8*)&g_pEventManager->CreateValidEvent(5, 0x3C)->m_data) GoalScoredDataExt();
@@ -1243,6 +1253,8 @@ void cGame::Update(float deltaTime)
     // act on a team's current powerup slot, which can change on its own between polls). Applied to
     // both teams independently, so it affects every human-controlled team (local co-op or 2P vs).
     PortModChallengeUpdate();
+    // PORT: lets the on-screen challenge banner (overlay.cpp) know a match is being played.
+    PortModChallengeNoteMatchFrame();
     {
         int challenge = PortModChallengeGetActive();
         if (challenge == PORT_CHALLENGE_NO_POWERUPS || challenge == PORT_CHALLENGE_INFINITE_POWERUPS)

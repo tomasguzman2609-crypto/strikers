@@ -53,6 +53,10 @@ extern "C" {
 //     shoulder charge (ACTION_HIT) and the slide (ACTION_SLIDE_ATTACK) - on a fielder of a team with a
 //     real local player into an electric-fence shock instead of the usual knockdown. Should be
 //     labeled "Tackles Eléctricos" in the companion app.
+//   - PORT_CHALLENGE_ROTATING_CURSE (22) is a meta-challenge: the game itself draws one of the other
+//     challenges at random when the match begins and a different one after every goal.
+//     PortModChallengeGetActive() reports the drawn one, so every hook works unchanged. Should be
+//     labeled "Maldición Rotativa" in the companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -77,6 +81,9 @@ enum ePortChallenge
     PORT_CHALLENGE_AGGRESSIVE_BOWSER = 19,       // Bowser comes far more often and lands on a human team's ball carrier - "Bowser Agresivo"
     PORT_CHALLENGE_HOT_POTATO = 20,              // a human team's fielder holding the ball over 1.5s explodes and loses it - "Papa Caliente"
     PORT_CHALLENGE_ELECTRIC_TACKLES = 21,        // a CPU team's hit or slide on a human team's fielder electrocutes them like the fence - "Tackles Eléctricos"
+    PORT_CHALLENGE_ROTATING_CURSE = 22,          // meta: a random other challenge, re-drawn at kickoff and after every goal - "Maldición Rotativa"
+
+    PORT_CHALLENGE_COUNT                         // one past the last valid ID
 };
 
 // Locates the mods/ folder beside the executable. Cheap even if it is missing; the challenge file
@@ -89,8 +96,26 @@ void PortModChallengeInit(void);
 void PortModChallengeUpdate(void);
 
 // The currently active challenge (an ePortChallenge value). PORT_CHALLENGE_NONE if no mods/
-// folder, no challenge.txt, or its contents don't parse as a known value.
+// folder, no challenge.txt, or its contents don't parse as a known value. Under
+// PORT_CHALLENGE_ROTATING_CURSE this is the challenge currently drawn, never the meta value itself.
 int PortModChallengeGetActive(void);
+
+// The value challenge.txt actually selects, i.e. PORT_CHALLENGE_ROTATING_CURSE itself rather than
+// what it drew. For display.
+int PortModChallengeGetSelected(void);
+
+// Under PORT_CHALLENGE_ROTATING_CURSE, draws a new challenge (never the same one twice in a row);
+// otherwise does nothing. The game calls this when a match begins and after every goal.
+void PortModChallengeReroll(void);
+
+// The Spanish display name of a challenge ID, as the companion app shows it; "" for
+// PORT_CHALLENGE_NONE or an unknown ID. Kept in step with the companion app's CHALLENGES list.
+const char* PortModChallengeName(int challenge);
+
+// The game calls this once per frame while a match is being updated, so the on-screen challenge
+// banner (overlay.cpp) can tell a match apart from menus and loading screens.
+void PortModChallengeNoteMatchFrame(void);
+unsigned int PortModChallengeMatchFrameCount(void);
 
 // Optional veto on a pad action, for challenges that depend on game state the input layer can't see
 // (e.g. which fielder a pad currently controls). The game registers one at startup; the platform pad

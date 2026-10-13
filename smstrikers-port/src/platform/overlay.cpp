@@ -11,6 +11,7 @@
 #include "port/host.h"
 #include "port/input.h"
 #include "port/launch.h"
+#include "port/mod_challenge.h"
 #include "port/texture_packs.h"
 
 #include <cstdio>
@@ -1857,6 +1858,83 @@ void queue_scripted_commands(unsigned long frame)
 
 }   // namespace
 
+// PORT: challenge roulette - the active challenge, on screen, for every player rather than only with
+// the debug overlay on: a small tag at the bottom centre (the game's own scoreboard is at the top)
+// for the whole match, and a large notice in the middle for a few seconds whenever the challenge
+// changes - which under "Maldición Rotativa" is at kickoff and after every goal. Shown only while a
+// match is being updated (cGame::Update counts its frames), so not over menus, loading or pause.
+static void DrawChallengeBanner(void)
+{
+    static unsigned int s_lastMatchFrame = 0;
+    static int s_framesSinceMatch = 1000;
+    const unsigned int matchFrame = PortModChallengeMatchFrameCount();
+    if (matchFrame != s_lastMatchFrame)
+    {
+        s_lastMatchFrame = matchFrame;
+        s_framesSinceMatch = 0;
+    }
+    else if (s_framesSinceMatch < 1000)
+    {
+        s_framesSinceMatch++;
+    }
+
+    static int s_shown = PORT_CHALLENGE_NONE;
+    static double s_noticeUntil = 0.0;
+    const int active = PortModChallengeGetActive();
+    if (s_framesSinceMatch > 30 || active == PORT_CHALLENGE_NONE)
+    {
+        // Forget it, so the notice plays again when the next match starts.
+        s_shown = PORT_CHALLENGE_NONE;
+        return;
+    }
+
+    const bool rotating = PortModChallengeGetSelected() == PORT_CHALLENGE_ROTATING_CURSE;
+    const char* name = PortModChallengeName(active);
+    const double now = ImGui::GetTime();
+    if (active != s_shown)
+    {
+        s_shown = active;
+        s_noticeUntil = now + 4.0;
+    }
+
+    const ImGuiIO& io = ImGui::GetIO();
+    // ImGui's built-in font is 13px; grow it with the window so it stays readable at 1080p and up.
+    const float scale = io.DisplaySize.y > 720.0f ? io.DisplaySize.y / 720.0f : 1.0f;
+    const ImVec4 gold(1.0f, 0.83f, 0.23f, 1.0f);
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                                   ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                                   ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y - 6.0f * scale), ImGuiCond_Always,
+                            ImVec2(0.5f, 1.0f));
+    ImGui::SetNextWindowBgAlpha(0.6f);
+    if (ImGui::Begin("##challenge_tag", nullptr, flags))
+    {
+        ImGui::SetWindowFontScale(1.5f * scale);
+        ImGui::TextColored(gold, rotating ? "Maldición Rotativa: %s" : "Reto: %s", name);
+    }
+    ImGui::End();
+
+    if (now < s_noticeUntil)
+    {
+        // Fade out over the last half second.
+        const float left = (float)(s_noticeUntil - now);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, left < 0.5f ? left / 0.5f : 1.0f);
+        ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.3f), ImGuiCond_Always,
+                                ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowBgAlpha(0.75f);
+        if (ImGui::Begin("##challenge_notice", nullptr, flags))
+        {
+            ImGui::SetWindowFontScale(2.0f * scale);
+            ImGui::TextUnformatted(rotating ? "¡NUEVA MALDICIÓN!" : "RETO ACTIVO");
+            ImGui::SetWindowFontScale(3.0f * scale);
+            ImGui::TextColored(gold, "%s", name);
+        }
+        ImGui::End();
+        ImGui::PopStyleVar();
+    }
+}
+
 void PortOverlayDraw(void)
 {
     // Before the read, not after: STRIKERS_OVERLAY=menu is what opens the menu and this is where
@@ -1868,6 +1946,7 @@ void PortOverlayDraw(void)
     // STRIKERS_CONTROL, polled here because this runs every frame before the STRIKERS_OVERLAY test
     // and inside Aurora's frame, which is where shot has to ask for its readback.
     PortControlPoll();
+    DrawChallengeBanner();
     const bool menu = s_menuOpen;
     if (!menu && !s_enabled)
         return;
