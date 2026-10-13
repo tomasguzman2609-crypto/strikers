@@ -1,9 +1,9 @@
 #ifndef _SHOCKFANTASMA_H_
 #define _SHOCKFANTASMA_H_
 
-// PORT: challenge roulette - "Shock Fantasma" (PORT_CHALLENGE_VANISH_ON_ELECTROCUTION). A real local
-// player's fielder that gets stunned by the electric fence is eliminated for the rest of the match
-// when the stun ends: it vanishes, its team plays a man down, and the pad moves to a teammate.
+// PORT: challenge roulette - "Shock Fantasma" (PORT_CHALLENGE_VANISH_ON_ELECTROCUTION). Any fielder
+// on a team with a real local player that gets stunned by the electric fence is eliminated for the
+// rest of the match when the stun ends: it vanishes, its team plays a man down, and the pad moves to a teammate.
 //
 // The game has no notion of a fielder leaving the pitch, so instead of removing it the eliminated
 // fielder is kept alive but parked off the pitch, non-solid and invisible, and every system that
@@ -17,8 +17,8 @@ class cFielder;
 // True if pCharacter is a fielder eliminated this match. Safe on NULL, goalies and Bowser.
 bool PortShockFantasmaIsEliminated(const cCharacter* pCharacter);
 
-// From InitActionElectrocution: remembers that this stun should eliminate the fielder, if it is
-// controlled by a real local player and the challenge is active.
+// From InitActionElectrocution: remembers that this stun should eliminate the fielder, if its team
+// has a real local player and the challenge is active.
 void PortShockFantasmaOnElectrocuted(cFielder* pFielder);
 
 // From the stun's explosion in ActionElectrocution: eliminates the fielder if OnElectrocuted marked

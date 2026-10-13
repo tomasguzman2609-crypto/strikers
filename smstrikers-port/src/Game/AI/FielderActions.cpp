@@ -1410,10 +1410,10 @@ void cFielder::InitActionElectrocution(const nlVector3& wallPosition, const nlVe
         mActionElectrocutionVars.electrocutionTime = 0.15f;
     }
 
-    // PORT: challenge roulette - "Shock Fantasma" eliminates a real local player's fielder for the
-    // rest of the match once this stun ends. Only noted here (the shock itself still plays out
-    // normally, so the player sees what happened); the elimination happens at the explosion in
-    // ActionElectrocution. CPU fielders (GetGlobalPad() == NULL) are unaffected.
+    // PORT: challenge roulette - "Shock Fantasma" eliminates any fielder of a team with a real local
+    // player (controlled or not) for the rest of the match once this stun ends. Only noted here (the
+    // shock itself still plays out normally, so the player sees what happened); the elimination
+    // happens at the explosion in ActionElectrocution. CPU-only teams are unaffected.
     PortShockFantasmaOnElectrocuted(this);
 
     // PORT DEBUG: set STRIKERS_DEBUG_CHALLENGE=1 to confirm whether this hook ran and what it did.

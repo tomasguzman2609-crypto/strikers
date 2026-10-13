@@ -37,11 +37,9 @@ bool Locate(const cCharacter* pCharacter, int& side, int& index)
     return false;
 }
 
-// Fielders a team must keep. Never fewer than 2, so a pass (including the automatic kickoff pass)
-// always has a valid teammate to go to - the passing code has no "no target" path. Never fewer than
-// the number of real players on the team either, so every human pad still has a fielder to drive
-// instead of falling through to the goalie.
-bool CanEliminate(int side)
+// Real local players on the team: every player slot (goalie included, it can hold a pad briefly)
+// currently bound to a cGlobalPad. CPU slots never have one.
+int CountHumans(int side)
 {
     cTeam* pTeam = g_pTeams[side];
 
@@ -52,6 +50,16 @@ bool CanEliminate(int side)
         if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL)
             nHumans++;
     }
+    return nHumans;
+}
+
+// Fielders a team must keep. Never fewer than 2, so a pass (including the automatic kickoff pass)
+// always has a valid teammate to go to - the passing code has no "no target" path. Never fewer than
+// the number of real players on the team either, so every human pad still has a fielder to drive
+// instead of falling through to the goalie.
+bool CanEliminate(int side)
+{
+    int nHumans = CountHumans(side);
 
     int nActive = 0;
     for (int i = 0; i < 4; i++)
@@ -111,9 +119,11 @@ void PortShockFantasmaOnElectrocuted(cFielder* pFielder)
     if (!Locate(pFielder, side, index))
         return;
 
-    // Same "real local player only" rule as the other electrocution challenges: decided at the
-    // moment of the shock, since the pad can be handed to a teammate during the stun.
-    sPending[side][index] = pFielder->GetGlobalPad() != NULL
+    // Any fielder on a team with a real local player, not just the one holding the pad: the fence
+    // only shocks a fielder knocked into it by a hit or a bomb, and by then the player has often
+    // switched away (or it was an AI teammate all along), so a pad-holder-only rule almost never
+    // fired. The challenge is "your team plays a man down"; CPU-only teams are unaffected.
+    sPending[side][index] = CountHumans(side) > 0
                          && PortModChallengeGetActive() == PORT_CHALLENGE_VANISH_ON_ELECTROCUTION;
 }
 
