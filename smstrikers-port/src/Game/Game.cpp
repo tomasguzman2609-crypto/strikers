@@ -4,6 +4,7 @@
 #include "Game/Team.h"
 #include "Game/AI/Fielder.h"
 #include "Game/AI/SelfishCaptain.h"
+#include "Game/CharacterTriggers.h"
 #include "Game/AI/ShockFantasma.h"
 #include "Game/AI/ScriptAction.h"
 #include "Game/AI/Powerups.h"
@@ -1203,6 +1204,36 @@ static bool PortTeamHasHuman(cTeam* pTeam)
     return false;
 }
 
+// PORT: challenge roulette - "Papa Caliente": the ball carrier, if a fielder of a team with a real
+// local player, explodes after holding the ball for more than 1.5s - the fence's explosion effect plus
+// a point-blank bomb knockdown, which already drops the ball and knocks it loose. Every fielder of the
+// team counts (AI sidekicks too), not just the one being controlled; goalies are exempt, since they
+// have to hold the ball before every clearance. Skipped mid Super Strike, which has its own long
+// cinematic hold.
+static void PortHotPotatoUpdate()
+{
+    const float kMaxHoldSeconds = 1.5f;
+
+    cFielder* pCarrier = g_pBall->GetOwnerFielder();
+    if (pCarrier == NULL || !PortTeamHasHuman(pCarrier->m_pTeam))
+        return;
+    if (pCarrier->m_tBallPossessionTimer.GetSeconds() <= kMaxHoldSeconds)
+        return;
+    if (pCarrier->m_eActionState == ACTION_SHOOT_TO_SCORE)
+        return;
+
+    // A "bomb" half a unit in front of the carrier: close enough that InitActionBombReact takes its
+    // full-knockdown branch (which releases the ball) rather than the shockwave stagger, and in front
+    // so the knockdown throws them backwards.
+    float fSin, fCos;
+    nlSinCos(&fSin, &fCos, pCarrier->m_aActualFacingDirection);
+    nlVector3 v3Bomb;
+    nlVec3Set(v3Bomb, pCarrier->m_v3Position.x + 0.5f * fCos, pCarrier->m_v3Position.y + 0.5f * fSin, pCarrier->m_v3Position.z);
+
+    EmitElectrocutionExplosion(pCarrier);
+    pCarrier->InitActionBombReact(v3Bomb, 0.0f);
+}
+
 void cGame::Update(float deltaTime)
 {
     mThoughtsAllowedThisUpdate = 1;
@@ -1234,6 +1265,13 @@ void cGame::Update(float deltaTime)
                 }
             }
         }
+    }
+
+    // PORT: challenge roulette - "Papa Caliente" (see PortHotPotatoUpdate above).
+    if (PortModChallengeGetActive() == PORT_CHALLENGE_HOT_POTATO
+        && (m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME) && g_pBall != NULL)
+    {
+        PortHotPotatoUpdate();
     }
 
     // PORT: challenge roulette - "Bowser Agresivo": the game rolls Bowser at most once per match (at
