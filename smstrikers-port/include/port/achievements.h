@@ -58,6 +58,10 @@ void PortAchievementsOpponentCaptainShocked(void);
 // distinct players (either team's).
 void PortAchievementsItemTripleHit(void);
 
+// Our side broke up an opponent's perfect pass (the slow-motion one) by knocking its receiver over
+// or taking the ball.
+void PortAchievementsSlowNo(void);
+
 // One of our fielders got the speed boost a successful deke with turbo gives.
 void PortAchievementsDekeBoost(void);
 

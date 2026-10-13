@@ -1,3 +1,4 @@
+#include "Game/AchievementHooks.h"
 #include "Game/Player.h"
 #include "Game/Character.h"
 #include "Game/Ball.h"
@@ -627,6 +628,9 @@ cFielder* cPlayer::GetClosestOpponentFielder(nlVector3* pPosition)
  */
 void cPlayer::PickupBall(cBall* pBall)
 {
+    // PORT: challenge roulette - "Slow-No": a steal while the opponent's perfect pass is in the air.
+    PortAchievementHooksBallTaken(this);
+
     if (m_eClassType == GOALIE && ((Goalie*)this)->mbNoUserControl)
     {
     }

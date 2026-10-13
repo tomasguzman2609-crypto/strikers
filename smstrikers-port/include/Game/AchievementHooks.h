@@ -36,6 +36,10 @@ void PortAchievementHooksPowerupHit(cPlayer* pUser, cFielder* pVictim);
 // From cGame::Update while a match is played (Gol Relámpago's window, challenge changes).
 void PortAchievementHooksTick(float fGameSeconds);
 
+// From cPlayer::PickupBall, before the ball changes hands: a steal during an opponent's
+// slow-motion perfect pass counts for "Slow-No".
+void PortAchievementHooksBallTaken(cPlayer* pTaker);
+
 // From the deke's turbo boost (ActionDeke).
 void PortAchievementHooksDekeBoost(cFielder* pFielder);
 

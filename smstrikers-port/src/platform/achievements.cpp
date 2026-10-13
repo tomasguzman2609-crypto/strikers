@@ -22,6 +22,7 @@ enum eAchievement
     ACH_COMEBACK,       // win after having been behind
     ACH_TRIPLE_ITEM,    // one item of ours hits 3 players, our own included
     ACH_DEKE_BOOST,     // earn the boost of a successful deke
+    ACH_SLOW_NO,        // break up an opponent's slow-motion perfect pass
     ACH_COUNT
 };
 
@@ -45,6 +46,7 @@ const Definition kDefinitions[ACH_COUNT] = {
     { "Remontada", "Gana después de ir perdiendo", 1 },
     { "Triple Impacto", "Golpea a 3 jugadores con un mismo item (cuentan los tuyos)", 1 },
     { "Esquive Turbo", "Consigue el impulso de un esquive perfecto (esquive + turbo)", 1 },
+    { "Slow-No", "Arruina el pase en cámara lenta del rival: derriba al que lo recibe o roba el balón", 1 },
 };
 
 const float kFastGoalSeconds = 25.0f;
@@ -234,6 +236,11 @@ extern "C" void PortAchievementsOpponentCaptainShocked(void)
 extern "C" void PortAchievementsItemTripleHit(void)
 {
     Advance(ACH_TRIPLE_ITEM, 1);
+}
+
+extern "C" void PortAchievementsSlowNo(void)
+{
+    Advance(ACH_SLOW_NO, 1);
 }
 
 extern "C" void PortAchievementsDekeBoost(void)

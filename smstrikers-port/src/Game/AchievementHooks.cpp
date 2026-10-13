@@ -2,6 +2,7 @@
 #include "Game/AchievementHooks.h"
 #include "Game/AI/Fielder.h"
 #include "Game/AI/ShotMeter.h"
+#include "Game/Ball.h"
 #include "Game/Player.h"
 #include "Game/Team.h"
 #include "port/achievements.h"
@@ -64,6 +65,15 @@ int OurSide()
 
 } // namespace
 
+// "Slow-No": an opponent's perfect pass (the slow-motion one, flagged by mbHyperSTS) is in the air
+// and pVictim - one of theirs - is the one it is meant for.
+static bool IsOpponentsPerfectPassReceiver(cFielder* pVictim)
+{
+    const int ourSide = OurSide();
+    return ourSide >= 0 && g_pBall != NULL && g_pBall->mbHyperSTS && g_pBall->m_pPassTarget == pVictim
+        && pVictim->m_pTeam != g_pTeams[ourSide];
+}
+
 void PortAchievementHooksBeginMatch()
 {
     s_pLastShooter = NULL;
@@ -112,6 +122,8 @@ void PortAchievementHooksTackle(cFielder* pVictim, cPlayer* pAttacker)
                         || ShotMeter::IsActive(pVictim->m_pShotMeter->m_eShotMeterState)
                         || pVictim->m_eActionState == ACTION_SHOOT_TO_SCORE;
     PortAchievementsTackle(bCharging ? 1 : 0);
+    if (IsOpponentsPerfectPassReceiver(pVictim))
+        PortAchievementsSlowNo();
 }
 
 void PortAchievementHooksElectrocuted(cFielder* pFielder)
@@ -142,6 +154,9 @@ void PortAchievementHooksPowerupHit(cPlayer* pUser, cFielder* pVictim)
     if (pVictim == NULL || pVictim == pUser || !IsOurs(pUser) || !Locate(pUser, side, index))
         return;
 
+    if (IsOpponentsPerfectPassReceiver(pVictim))
+        PortAchievementsSlowNo();
+
     UseHits& use = s_useHits[side][index];
     if (use.nVictims >= 3)
         return; // already counted
@@ -159,6 +174,17 @@ void PortAchievementHooksTick(float fGameSeconds)
 {
     if (OurSide() >= 0)
         PortAchievementsTick(fGameSeconds);
+}
+
+void PortAchievementHooksBallTaken(cPlayer* pTaker)
+{
+    const int ourSide = OurSide();
+    if (ourSide < 0 || pTaker == NULL || pTaker->m_pTeam != g_pTeams[ourSide] || g_pBall == NULL)
+        return;
+    // Taking the ball while an opponent's perfect pass is still headed for one of theirs.
+    cPlayer* pTarget = g_pBall->m_pPassTarget;
+    if (g_pBall->mbHyperSTS && pTarget != NULL && pTarget->m_pTeam != g_pTeams[ourSide])
+        PortAchievementsSlowNo();
 }
 
 void PortAchievementHooksDekeBoost(cFielder* pFielder)
