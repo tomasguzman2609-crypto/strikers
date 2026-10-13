@@ -8,6 +8,9 @@
 #include "NL/nlMath.h"
 #include "port/mod_challenge.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 namespace
 {
 
@@ -15,6 +18,13 @@ namespace
 // quit before GS_END_GAME can't leave a dangling pointer that a later match's fielder reuses.
 bool sEliminated[2][4];
 bool sPending[2][4];
+
+// PORT DEBUG: set STRIKERS_DEBUG_CHALLENGE=1 (same switch as the other challenge hooks) to trace
+// each step, e.g. to tell "the hook never ran" from "it ran but declined".
+bool DebugEnabled()
+{
+    return getenv("STRIKERS_DEBUG_CHALLENGE") != NULL;
+}
 
 bool Locate(const cCharacter* pCharacter, int& side, int& index)
 {
@@ -125,6 +135,12 @@ void PortShockFantasmaOnElectrocuted(cFielder* pFielder)
     // fired. The challenge is "your team plays a man down"; CPU-only teams are unaffected.
     sPending[side][index] = CountHumans(side) > 0
                          && PortModChallengeGetActive() == PORT_CHALLENGE_VANISH_ON_ELECTROCUTION;
+
+    if (DebugEnabled())
+    {
+        fprintf(stderr, "[shock fantasma] shocked side=%d fielder=%d humans=%d activeChallenge=%d pending=%d\n",
+                side, index, CountHumans(side), PortModChallengeGetActive(), sPending[side][index] ? 1 : 0);
+    }
 }
 
 void PortShockFantasmaOnStunEnd(cFielder* pFielder)
@@ -134,7 +150,14 @@ void PortShockFantasmaOnStunEnd(cFielder* pFielder)
         return;
 
     sPending[side][index] = false;
-    if (PortModChallengeGetActive() != PORT_CHALLENGE_VANISH_ON_ELECTROCUTION || !CanEliminate(side))
+    bool bActive = PortModChallengeGetActive() == PORT_CHALLENGE_VANISH_ON_ELECTROCUTION;
+    bool bCanEliminate = CanEliminate(side);
+    if (DebugEnabled())
+    {
+        fprintf(stderr, "[shock fantasma] stun end side=%d fielder=%d challengeStillActive=%d canEliminate=%d\n",
+                side, index, bActive ? 1 : 0, bCanEliminate ? 1 : 0);
+    }
+    if (!bActive || !bCanEliminate)
         return;
 
     sEliminated[side][index] = true;
