@@ -996,7 +996,10 @@ void Presentation::EventHandler(Event* event)
                 {
                     // PORT: GameLocal is padded to m_fGameDuration's console offset.
                     float duration = g_pGame->m_fGameDuration;
-                    if (g_pGame->GetGameTime() >= duration)
+                    // PORT: challenge roulette - GS_END_GAME here also covers a goal that ended the
+                    // match early under "Ventaja Oponente = Perdiste" (cGame::CheckForGoal); the game
+                    // only reaches it from a goal otherwise in overtime, where the time test holds.
+                    if (g_pGame->GetGameTime() >= duration || g_pGame->m_eGameState == GS_END_GAME)
                     {
                         s32 awayScore = g_pTeams[1]->m_nScore;
                         s32 homeScore = g_pTeams[0]->m_nScore;

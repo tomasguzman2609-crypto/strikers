@@ -619,6 +619,23 @@ void cGame::CheckForGoal()
 
             g_pTeams[nSide]->m_nScore += uNumGoalsScored;
 
+            // PORT: challenge roulette - "Ventaja Oponente = Perdiste": a CPU-only team going ahead
+            // of a human team ends the match right here, exactly like a goal in sudden-death
+            // overtime (the GS_OVERTIME branch above), so the post-game flow is the game's own. The
+            // goal presentation picks "GoalSuddenDeath" for it (see Presentation.cpp). Checked after
+            // the score is updated, so a Super Strike (2 goals) is counted correctly.
+            {
+                cTeam* pScorers = g_pTeams[nSide];
+                cTeam* pOther = g_pTeams[(nSide + 1) % 2];
+                if (PortModChallengeGetActive() == PORT_CHALLENGE_OPPONENT_LEAD_LOSES
+                    && m_eGameState == GS_POST_GOAL
+                    && !PortTeamHasHuman(pScorers) && PortTeamHasHuman(pOther)
+                    && pScorers->m_nScore > pOther->m_nScore)
+                {
+                    InitGameState(GS_END_GAME);
+                }
+            }
+
             GoalScoredDataExt* pGoalScored = new (/* PORT: m_data is at 0x18 here. */ (u8*)&g_pEventManager->CreateValidEvent(5, 0x3C)->m_data) GoalScoredDataExt();
             pGoalScored->data.uNumGoalsScored = uNumGoalsScored;
             pGoalScored->data.uTeamIndex = nSide;

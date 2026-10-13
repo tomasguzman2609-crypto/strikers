@@ -39,6 +39,9 @@ extern "C" {
 //   - PORT_CHALLENGE_SELFISH_CAPTAIN (17) lets only the captain of a team with a real local player
 //     shoot at goal (every kind of shot); for anyone else the shoot button does nothing, and AI
 //     teammates pass instead. Should be labeled "Capitán Egoísta" in the companion app.
+//   - PORT_CHALLENGE_OPPONENT_LEAD_LOSES (18) ends the match on the spot, as a loss, the moment a
+//     CPU-only team goes ahead of a team with a real local player (like a sudden-death goal). Should
+//     be labeled "Ventaja Oponente = Perdiste" in the companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -59,6 +62,7 @@ enum ePortChallenge
     PORT_CHALLENGE_OPPONENT_DOUBLE_GOALS = 15,   // a CPU-only team's goal is worth double (normal goal counts as 2, a Super Strike counts as 4) - "Gol Doble Rival"
     PORT_CHALLENGE_VANISH_ON_ELECTROCUTION = 16, // any fielder of a human team shocked by the electric fence vanishes for the rest of the match (team keeps >= 2 fielders) - "Shock Fantasma"
     PORT_CHALLENGE_SELFISH_CAPTAIN = 17,         // on a human team only the captain can shoot at goal; the shoot button does nothing for anyone else - "Capitán Egoísta"
+    PORT_CHALLENGE_OPPONENT_LEAD_LOSES = 18,     // the match ends immediately (a loss) as soon as a CPU-only team leads a human team - "Ventaja Oponente = Perdiste"
 };
 
 // Locates the mods/ folder beside the executable. Cheap even if it is missing; the challenge file
