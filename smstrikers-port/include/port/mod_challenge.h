@@ -42,6 +42,10 @@ extern "C" {
 //   - PORT_CHALLENGE_OPPONENT_LEAD_LOSES (18) ends the match on the spot, as a loss, the moment a
 //     CPU-only team goes ahead of a team with a real local player (like a sudden-death goal). Should
 //     be labeled "Ventaja Oponente = Perdiste" in the companion app.
+//   - PORT_CHALLENGE_AGGRESSIVE_BOWSER (19) makes Bowser show up every match and come back every
+//     12-20s after he leaves, and his landing/jump/stomp aim at the ball carrier whenever that is a
+//     fielder of a team with a real local player. Should be labeled "Bowser Agresivo" in the
+//     companion app. Still needs Bowser attacks enabled in the match options.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -63,6 +67,7 @@ enum ePortChallenge
     PORT_CHALLENGE_VANISH_ON_ELECTROCUTION = 16, // any fielder of a human team shocked by the electric fence vanishes for the rest of the match (team keeps >= 2 fielders) - "Shock Fantasma"
     PORT_CHALLENGE_SELFISH_CAPTAIN = 17,         // on a human team only the captain can shoot at goal; the shoot button does nothing for anyone else - "Capitán Egoísta"
     PORT_CHALLENGE_OPPONENT_LEAD_LOSES = 18,     // the match ends immediately (a loss) as soon as a CPU-only team leads a human team - "Ventaja Oponente = Perdiste"
+    PORT_CHALLENGE_AGGRESSIVE_BOWSER = 19,       // Bowser comes far more often and lands on a human team's ball carrier - "Bowser Agresivo"
 };
 
 // Locates the mods/ folder beside the executable. Cheap even if it is missing; the challenge file

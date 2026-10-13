@@ -20,10 +20,35 @@
 #include "Game/Camera/CameraMan.h"
 #include "Game/Render/NetMesh.h"
 #include "Game/Game.h"
+#include "Game/Team.h"
+#include "port/mod_challenge.h"
 #include "Game/World/worldanim.h"
 #include "Game/Audio/AudioLoader.h"
-
 #include "math.h"
+
+// PORT: challenge roulette - "Bowser Agresivo": where Bowser should aim instead of his usual spot
+// (the camera target, or near the ball), i.e. the ball carrier when that is a fielder of a team with a
+// real local player. Returns false - leave the game's own choice alone - otherwise.
+static bool PortAggressiveBowserTarget(nlVector3& v3Target)
+{
+    if (PortModChallengeGetActive() != PORT_CHALLENGE_AGGRESSIVE_BOWSER)
+        return false;
+
+    cFielder* pCarrier = g_pBall->GetOwnerFielder();
+    if (pCarrier == NULL || pCarrier->m_pTeam == NULL)
+        return false;
+
+    for (int i = 0; i < 5; i++)
+    {
+        cPlayer* pPlayer = pCarrier->m_pTeam->GetPlayer(i);
+        if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL)
+        {
+            v3Target = pCarrier->m_v3Position;
+            return true;
+        }
+    }
+    return false;
+}
 
 #pragma inline_max_total_size(5000)
 
@@ -809,6 +834,9 @@ void Bowser::ActionInit()
         cBaseCamera* cam = nlDLRingGetStart(cCameraManager::m_cameraStack);
         const nlVector3& target = cam->GetTargetPosition();
         mv3TargetPos = target;
+        // PORT: challenge roulette - "Bowser Agresivo": stomp at the human team's ball carrier (the
+        // clamps below still keep a stomp out of the centre of the pitch).
+        PortAggressiveBowserTarget(mv3TargetPos);
     }
     else
     {
@@ -1027,6 +1055,8 @@ void Bowser::ActionFall()
 
     cBaseCamera* camera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
     mv3TargetPos = camera->GetTargetPosition();
+    // PORT: challenge roulette - "Bowser Agresivo": drop onto the human team's ball carrier.
+    PortAggressiveBowserTarget(mv3TargetPos);
 
     nlVector3 targetPos = mv3TargetPos;
 
@@ -1082,25 +1112,36 @@ void Bowser::ActionJump()
     SetBowserAnimState(BOWSER_ANIM_JUMP, PM_HOLD, 0.2f);
 
     nlVector3 v3JumpPos = g_pBall->m_v3Position;
-    v3JumpPos.x += nlRandomf(3.0f, &nlDefaultSeed) - 1.5f;
-
-    float fMaxTilt = g_pGame->m_pGameTweaks->fBowserMaxTilt;
-    if (v3JumpPos.x > 0.0f && mfYAxisTilt <= -fMaxTilt)
+    // PORT: challenge roulette - "Bowser Agresivo": jump straight at the human team's ball carrier,
+    // skipping the random offsets below that normally make him land beside the ball.
+    nlVector3 v3PortTarget;
+    bool bPortAimed = PortAggressiveBowserTarget(v3PortTarget);
+    if (bPortAimed)
     {
-        v3JumpPos.x *= -1.0f;
-    }
-    else if (v3JumpPos.x < 0.0f && mfYAxisTilt >= fMaxTilt)
-    {
-        v3JumpPos.x *= -1.0f;
-    }
-
-    if (v3JumpPos.y < 0.0f)
-    {
-        v3JumpPos.y += 1.0f + nlRandomf(3.0f, &nlDefaultSeed);
+        v3JumpPos = v3PortTarget;
     }
     else
     {
-        v3JumpPos.y -= 1.0f + nlRandomf(3.0f, &nlDefaultSeed);
+        v3JumpPos.x += nlRandomf(3.0f, &nlDefaultSeed) - 1.5f;
+
+        float fMaxTilt = g_pGame->m_pGameTweaks->fBowserMaxTilt;
+        if (v3JumpPos.x > 0.0f && mfYAxisTilt <= -fMaxTilt)
+        {
+            v3JumpPos.x *= -1.0f;
+        }
+        else if (v3JumpPos.x < 0.0f && mfYAxisTilt >= fMaxTilt)
+        {
+            v3JumpPos.x *= -1.0f;
+        }
+
+        if (v3JumpPos.y < 0.0f)
+        {
+            v3JumpPos.y += 1.0f + nlRandomf(3.0f, &nlDefaultSeed);
+        }
+        else
+        {
+            v3JumpPos.y -= 1.0f + nlRandomf(3.0f, &nlDefaultSeed);
+        }
     }
 
     float goalLineX = cField::GetGoalLineX(1U);

@@ -1236,6 +1236,24 @@ void cGame::Update(float deltaTime)
         }
     }
 
+    // PORT: challenge roulette - "Bowser Agresivo": the game rolls Bowser at most once per match (at
+    // BeginGame, and only re-arms him in special modes), so keep his timer armed instead: whenever he
+    // is hidden and no appearance is pending, schedule one 12-20s out, and pull a far-off one in. Done
+    // per frame rather than in ResetBowser() so a challenge picked mid-match still takes effect. The
+    // same exclusions as ResetBowser/ActionInit apply (tilting field, Strikers 101, attacks disabled).
+    if (PortModChallengeGetActive() == PORT_CHALLENGE_AGGRESSIVE_BOWSER
+        && (m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME)
+        && !GameInfoManager::Instance()->IsTiltingFieldOn() && !GameInfoManager::Instance()->mIsInStrikers101Mode
+        && GameInfoManager::Instance()->IsBowserAttackEnabled())
+    {
+        Bowser* pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
+        if (pBowser != NULL && pBowser->meBowserState == BOWSER_STATE_HIDDEN
+            && (mBowserTimer.m_uPackedTime == 0 || mBowserTimer.GetSeconds() > 20.0f))
+        {
+            mBowserTimer.SetSeconds(12.0f + nlRandomf(8.0f, &nlDefaultSeed));
+        }
+    }
+
     // PORT: challenge roulette - keep "Shock Fantasma"'s eliminated fielders parked and away from
     // the pad. Runs regardless of the active challenge: an elimination lasts until the next match,
     // even once PortModChallengeClear() has reset the file at GS_END_GAME.
