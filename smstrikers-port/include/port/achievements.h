@@ -48,6 +48,12 @@ void PortAchievementsTackle(int interruptedCharge);
 // The opposing captain was electrocuted.
 void PortAchievementsOpponentCaptainShocked(void);
 
+// One item thrown by our side hit three players (either team's).
+void PortAchievementsItemTripleHit(void);
+
+// One of our fielders got the speed boost a successful deke with turbo gives.
+void PortAchievementsDekeBoost(void);
+
 // The match ended with this final score. From GS_END_GAME.
 void PortAchievementsMatchEnd(int scoreFor, int scoreAgainst);
 

@@ -57,6 +57,9 @@ extern "C" {
 //     challenges at random when the match begins and a different one after every goal.
 //     PortModChallengeGetActive() reports the drawn one, so every hook works unchanged. Should be
 //     labeled "Maldición Rotativa" in the companion app.
+//   - PORT_CHALLENGE_OPPONENT_STAR_PULSE (23) gives every fielder of a CPU-only team a 1s Star (the
+//     invincible, knock-everyone-over powerup) every 7s of play. Should be labeled "Estrella
+//     Intermitente" in the companion app. Maldición Rotativa can draw it like any other.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -82,6 +85,7 @@ enum ePortChallenge
     PORT_CHALLENGE_HOT_POTATO = 20,              // a human team's fielder holding the ball over 2s explodes and loses it - "Papa Caliente"
     PORT_CHALLENGE_ELECTRIC_TACKLES = 21,        // a CPU team's hit or slide on a human team's fielder electrocutes them like the fence - "Tackles Eléctricos"
     PORT_CHALLENGE_ROTATING_CURSE = 22,          // meta: a random other challenge, re-drawn at kickoff and after every goal - "Maldición Rotativa"
+    PORT_CHALLENGE_OPPONENT_STAR_PULSE = 23,     // every CPU-only team fielder gets a 1s Star every 7s - "Estrella Intermitente"
 
     PORT_CHALLENGE_COUNT                         // one past the last valid ID
 };

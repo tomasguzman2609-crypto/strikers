@@ -24,6 +24,18 @@ void PortAchievementHooksTackle(cFielder* pVictim, cPlayer* pAttacker);
 // From InitActionElectrocution.
 void PortAchievementHooksElectrocuted(cFielder* pFielder);
 
+// From PowerupBase::CollisionCallback, for each fielder an item (shell, banana) hits directly.
+void PortAchievementHooksItemHit(const void* pItem, cPlayer* pThrower, cFielder* pVictim);
+
+// From PowerupBase::Destroy: the item is gone, and its slot may be reused by a new one.
+void PortAchievementHooksItemGone(const void* pItem);
+
+// From the Bob-omb explosion (Character.cpp, event 0x2C): how many fielders it knocked down.
+void PortAchievementHooksBlastHits(cPlayer* pThrower, int nHits);
+
+// From the deke's turbo boost (ActionDeke).
+void PortAchievementHooksDekeBoost(cFielder* pFielder);
+
 // From GS_END_GAME.
 void PortAchievementHooksMatchEnd();
 

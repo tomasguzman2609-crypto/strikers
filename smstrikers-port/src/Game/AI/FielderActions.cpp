@@ -1363,6 +1363,8 @@ void cFielder::ActionDeke(float dt)
             m_pPowerupTarget = nullptr;
             ThrowPowerup();
             m_tPowerupEffectTime.SetSeconds(0.5f);
+            // PORT: challenge roulette - the deke boost, for the "Esquive Turbo" achievement.
+            PortAchievementHooksDekeBoost(this);
         }
 
         SetAction(ACTION_NEED_ACTION);

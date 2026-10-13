@@ -47,12 +47,12 @@ void DrawRotating()
 {
     // Any real challenge other than the meta one itself, and not the one just drawn.
     const int first = PORT_CHALLENGE_NONE + 1;
-    const int count = PORT_CHALLENGE_ROTATING_CURSE - first;
+    const int count = PORT_CHALLENGE_COUNT - first;
     int pick;
     do
     {
         pick = first + (int)(NextRandom() % (unsigned int)count);
-    } while (pick == g_rotatingDraw && count > 1);
+    } while (pick == PORT_CHALLENGE_ROTATING_CURSE || (pick == g_rotatingDraw && count > 2));
     g_rotatingDraw = pick;
 }
 
@@ -225,6 +225,7 @@ extern "C" const char* PortModChallengeName(int challenge)
         "Papa Caliente",
         "Tackles Eléctricos",
         "Maldición Rotativa",
+        "Estrella Intermitente",
     };
     if (challenge <= PORT_CHALLENGE_NONE || challenge >= PORT_CHALLENGE_COUNT)
         return "";

@@ -1256,6 +1256,46 @@ static void PortHotPotatoUpdate()
     pCarrier->InitActionBombReact(v3Bomb, 0.0f);
 }
 
+// PORT: challenge roulette - "Estrella Intermitente": every 7s of play, each fielder of a CPU-only team
+// gets a 1s Star. Applied the way ThrowPowerup applies a Star (effect timer + EmitStar, which the
+// fielder's own update expires through KillStar), minus its "powerup used" stat. A fielder already
+// holding or under a powerup is left alone, and nothing is handed out during a Super Strike (whose
+// cinematic suppresses powerups).
+static void PortOpponentStarPulseUpdate(float fDeltaT, bool bActive)
+{
+    const float kEverySeconds = 7.0f;
+    const float kStarSeconds = 1.0f;
+    static float s_fSinceLast = 0.0f;
+
+    if (!bActive)
+    {
+        s_fSinceLast = 0.0f;
+        return;
+    }
+    s_fSinceLast += fDeltaT;
+    if (s_fSinceLast < kEverySeconds || g_pGame->mbCaptainShotToScoreOn)
+        return;
+    s_fSinceLast = 0.0f;
+
+    for (int side = 0; side < 2; side++)
+    {
+        cTeam* pTeam = g_pTeams[side];
+        if (pTeam == NULL || PortTeamHasHuman(pTeam))
+            continue;
+        for (int i = 0; i < 4; i++)
+        {
+            cFielder* pFielder = pTeam->GetFielder(i);
+            // m_ePowerup is also the item a fielder is about to throw, so only an empty slot is safe.
+            if (pFielder->m_ePowerup != POWER_UP_NONE)
+                continue;
+            pFielder->m_ePowerup = POWER_UP_STAR;
+            pFielder->mnNumPowerups = 1;
+            pFielder->m_tPowerupEffectTime.SetSeconds(kStarSeconds);
+            EmitStar(pFielder);
+        }
+    }
+}
+
 void cGame::Update(float deltaTime)
 {
     mThoughtsAllowedThisUpdate = 1;
@@ -1290,6 +1330,10 @@ void cGame::Update(float deltaTime)
             }
         }
     }
+
+    // PORT: challenge roulette - "Estrella Intermitente" (see PortOpponentStarPulseUpdate above).
+    PortOpponentStarPulseUpdate(deltaTime, PortModChallengeGetActive() == PORT_CHALLENGE_OPPONENT_STAR_PULSE
+                                               && (m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME));
 
     // PORT: challenge roulette - "Papa Caliente" (see PortHotPotatoUpdate above).
     if (PortModChallengeGetActive() == PORT_CHALLENGE_HOT_POTATO

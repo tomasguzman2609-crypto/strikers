@@ -13,6 +13,16 @@ namespace
 cFielder* s_pLastShooter = NULL;
 bool s_bLastShotWasChip = false;
 
+// Distinct fielders each live item has hit, for "Triple Impacto". Items come from a small pool and
+// are forgotten in PortAchievementHooksItemGone, so a few slots are plenty.
+struct ItemHits
+{
+    const void* pItem;
+    cFielder* pVictims[3];
+    int nVictims;
+};
+ItemHits s_itemHits[8];
+
 bool TeamHasHuman(cTeam* pTeam)
 {
     if (pTeam == NULL)
@@ -43,6 +53,8 @@ void PortAchievementHooksBeginMatch()
 {
     s_pLastShooter = NULL;
     s_bLastShotWasChip = false;
+    for (int i = 0; i < 8; i++)
+        s_itemHits[i].pItem = NULL;
     if (OurSide() >= 0)
         PortAchievementsBeginMatch();
     else
@@ -93,6 +105,67 @@ void PortAchievementHooksElectrocuted(cFielder* pFielder)
         return;
     if (pFielder == pFielder->m_pTeam->GetCaptain())
         PortAchievementsOpponentCaptainShocked();
+}
+
+static bool IsOurs(cPlayer* pPlayer)
+{
+    const int ourSide = OurSide();
+    return ourSide >= 0 && pPlayer != NULL && pPlayer->m_pTeam == g_pTeams[ourSide];
+}
+
+void PortAchievementHooksItemHit(const void* pItem, cPlayer* pThrower, cFielder* pVictim)
+{
+    if (pItem == NULL || pVictim == NULL || !IsOurs(pThrower))
+        return;
+
+    ItemHits* pEntry = NULL;
+    ItemHits* pFree = NULL;
+    for (int i = 0; i < 8; i++)
+    {
+        if (s_itemHits[i].pItem == pItem)
+            pEntry = &s_itemHits[i];
+        else if (s_itemHits[i].pItem == NULL && pFree == NULL)
+            pFree = &s_itemHits[i];
+    }
+    if (pEntry == NULL)
+    {
+        if (pFree == NULL)
+            return;
+        pEntry = pFree;
+        pEntry->pItem = pItem;
+        pEntry->nVictims = 0;
+    }
+
+    for (int i = 0; i < pEntry->nVictims; i++)
+    {
+        if (pEntry->pVictims[i] == pVictim)
+            return;
+    }
+    if (pEntry->nVictims < 3)
+        pEntry->pVictims[pEntry->nVictims++] = pVictim;
+    if (pEntry->nVictims == 3)
+        PortAchievementsItemTripleHit();
+}
+
+void PortAchievementHooksItemGone(const void* pItem)
+{
+    for (int i = 0; i < 8; i++)
+    {
+        if (s_itemHits[i].pItem == pItem)
+            s_itemHits[i].pItem = NULL;
+    }
+}
+
+void PortAchievementHooksBlastHits(cPlayer* pThrower, int nHits)
+{
+    if (nHits >= 3 && IsOurs(pThrower))
+        PortAchievementsItemTripleHit();
+}
+
+void PortAchievementHooksDekeBoost(cFielder* pFielder)
+{
+    if (IsOurs(pFielder))
+        PortAchievementsDekeBoost();
 }
 
 void PortAchievementHooksMatchEnd()

@@ -1,3 +1,4 @@
+#include "Game/AchievementHooks.h"
 #include "Game/Character.h"
 #include "port/mod_challenge.h"
 #include "Game/CharacterTemplate.h"
@@ -968,6 +969,9 @@ void AIEventHandler(Event* pEvent, void*)
             break;
         }
 
+        // PORT: challenge roulette - "Triple Impacto": fielders this one explosion knocks down.
+        int nPortBlastHits = 0;
+
         for (s32 i = 0; i < 2; i++)
         {
             if (g_pTeams[i] != 0)
@@ -1016,12 +1020,16 @@ void AIEventHandler(Event* pEvent, void*)
                     if (!bIsWeaponSuccessful)
                         continue;
 
+                    nPortBlastHits++;
+
                     Event* pStatsEvent = g_pEventManager->CreateValidEvent(0x55, 0x20);
                     CollisionPowerupStatsData* pStatsData = new (&pStatsEvent->m_data) CollisionPowerupStatsData();
                     pStatsData->pThrower = pEventData->pThrower;
                     pStatsData->nThrowerPadID = pEventData->nThrowerPadID;
                 }
             }
+
+            PortAchievementHooksBlastHits((cPlayer*)pEventData->pThrower, nPortBlastHits);
 
             g_pGame->BlowUpPowerups(pEventData->v3ExplosionLocation, pEventData->fExplosionRadius);
             SidelineExplodableManager::TriggerExplosions(pEventData->v3ExplosionLocation, pEventData->fExplosionRadius);

@@ -20,6 +20,8 @@ enum eAchievement
     ACH_ROUT,           // win by 3 or more
     ACH_CAPTAIN_BRACE,  // our captain scores 2
     ACH_COMEBACK,       // win after having been behind
+    ACH_TRIPLE_ITEM,    // one item of ours hits 3 players, our own included
+    ACH_DEKE_BOOST,     // earn the boost of a successful deke
     ACH_COUNT
 };
 
@@ -41,6 +43,8 @@ const Definition kDefinitions[ACH_COUNT] = {
     { "Goleada", "Gana por 3 goles o más", 1 },
     { "Capitán Goleador", "Tu capitán marca 2 goles", 2 },
     { "Remontada", "Gana después de ir perdiendo", 1 },
+    { "Triple Impacto", "Golpea a 3 jugadores con un mismo item (cuentan los tuyos)", 1 },
+    { "Esquive Turbo", "Consigue el impulso de un esquive perfecto (esquive + turbo)", 1 },
 };
 
 const float kFastGoalSeconds = 25.0f;
@@ -168,6 +172,16 @@ extern "C" void PortAchievementsTackle(int interruptedCharge)
 extern "C" void PortAchievementsOpponentCaptainShocked(void)
 {
     Advance(ACH_SHOCK_CAPTAIN, 1);
+}
+
+extern "C" void PortAchievementsItemTripleHit(void)
+{
+    Advance(ACH_TRIPLE_ITEM, 1);
+}
+
+extern "C" void PortAchievementsDekeBoost(void)
+{
+    Advance(ACH_DEKE_BOOST, 1);
 }
 
 extern "C" void PortAchievementsMatchEnd(int scoreFor, int scoreAgainst)
