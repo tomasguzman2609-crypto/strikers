@@ -34,7 +34,7 @@ extern "C" {
 //   - PORT_CHALLENGE_VANISH_ON_ELECTROCUTION (16) eliminates any fielder of a team with a real local
 //     player (controlled or not) for the rest of the match when the electric fence's shock ends (it
 //     vanishes and its team plays a man down, never below 2 fielders), and should be labeled
-//     "Shock Fantasma" in the companion app. Unlike most challenges it is team-wide, not just the
+//     "Shock Fatal" in the companion app. Unlike most challenges it is team-wide, not just the
 //     pad holder: the fence only shocks fielders knocked into it, rarely the one being controlled.
 //   - PORT_CHALLENGE_SELFISH_CAPTAIN (17) lets only the captain of a team with a real local player
 //     shoot at goal (every kind of shot); for anyone else the shoot button does nothing, and AI
@@ -64,7 +64,7 @@ enum ePortChallenge
     PORT_CHALLENGE_ONLY_CHIP_SHOTS = 13,    // every real player's shot on goal is forced to be a lobbed "globito" (chip shot) - "Modo Globito"
     PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU = 14, // a CPU-controlled fielder stunned by the electric fence only stays stunned 0.15s (real players unaffected) - "Shocks Cortos"
     PORT_CHALLENGE_OPPONENT_DOUBLE_GOALS = 15,   // a CPU-only team's goal is worth double (normal goal counts as 2, a Super Strike counts as 4) - "Gol Doble Rival"
-    PORT_CHALLENGE_VANISH_ON_ELECTROCUTION = 16, // any fielder of a human team shocked by the electric fence vanishes for the rest of the match (team keeps >= 2 fielders) - "Shock Fantasma"
+    PORT_CHALLENGE_VANISH_ON_ELECTROCUTION = 16, // any fielder of a human team shocked by the electric fence vanishes for the rest of the match (team keeps >= 2 fielders) - "Shock Fatal"
     PORT_CHALLENGE_SELFISH_CAPTAIN = 17,         // on a human team only the captain can shoot at goal; the shoot button does nothing for anyone else - "Capitán Egoísta"
     PORT_CHALLENGE_OPPONENT_LEAD_LOSES = 18,     // the match ends immediately (a loss) as soon as a CPU-only team leads a human team - "Ventaja Oponente = Perdiste"
     PORT_CHALLENGE_AGGRESSIVE_BOWSER = 19,       // Bowser comes far more often and lands on a human team's ball carrier - "Bowser Agresivo"
