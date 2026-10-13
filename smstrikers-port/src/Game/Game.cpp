@@ -1257,41 +1257,86 @@ static void PortHotPotatoUpdate()
 }
 
 // PORT: challenge roulette - "Estrella Intermitente": every 7s of play, each fielder of a CPU-only team
-// gets a 1s Star. Applied the way ThrowPowerup applies a Star (effect timer + EmitStar, which the
-// fielder's own update expires through KillStar), minus its "powerup used" stat. A fielder already
-// holding or under a powerup is left alone, and nothing is handed out during a Super Strike (whose
-// cinematic suppresses powerups).
+// gets a 1s Star, whatever item their team holds. Applied the way ThrowPowerup applies a Star (effect
+// timer + EmitStar, which the fielder's own update expires through KillStar), minus its "powerup used"
+// stat. Items live in the team's inventory; a fielder's own slot (m_ePowerup) only matters while
+// they are throwing one (and keeps the thrown item's type afterwards, so it says nothing about what
+// is held). A fielder caught mid-throw (IsPlayingPowerupAnim) gets the Star as soon as the throw is
+// out, rather than losing the item - or after 1.5s regardless, so it can never be skipped. A running
+// Mushroom is cut short for it; one that already has a Star keeps it. Nothing is handed out during a Super Strike, whose cinematic
+// suppresses powerups.
 static void PortOpponentStarPulseUpdate(float fDeltaT, bool bActive)
 {
     const float kEverySeconds = 7.0f;
     const float kStarSeconds = 1.0f;
+    const float kMaxWaitSeconds = 1.5f;
     static float s_fSinceLast = 0.0f;
+    static bool s_bPending[2][4];
+    static float s_fPendingFor[2][4];
 
     if (!bActive)
     {
         s_fSinceLast = 0.0f;
+        for (int side = 0; side < 2; side++)
+            for (int i = 0; i < 4; i++)
+                s_bPending[side][i] = false;
         return;
     }
+
     s_fSinceLast += fDeltaT;
-    if (s_fSinceLast < kEverySeconds || g_pGame->mbCaptainShotToScoreOn)
+    if (s_fSinceLast >= kEverySeconds)
+    {
+        s_fSinceLast = 0.0f;
+        for (int side = 0; side < 2; side++)
+        {
+            const bool bOpponent = g_pTeams[side] != NULL && !PortTeamHasHuman(g_pTeams[side]);
+            for (int i = 0; i < 4; i++)
+            {
+                s_bPending[side][i] = bOpponent;
+                s_fPendingFor[side][i] = 0.0f;
+            }
+        }
+    }
+
+    if (g_pGame->mbCaptainShotToScoreOn)
         return;
-    s_fSinceLast = 0.0f;
 
     for (int side = 0; side < 2; side++)
     {
         cTeam* pTeam = g_pTeams[side];
-        if (pTeam == NULL || PortTeamHasHuman(pTeam))
+        if (pTeam == NULL)
             continue;
         for (int i = 0; i < 4; i++)
         {
-            cFielder* pFielder = pTeam->GetFielder(i);
-            // m_ePowerup is also the item a fielder is about to throw, so only an empty slot is safe.
-            if (pFielder->m_ePowerup != POWER_UP_NONE)
+            if (!s_bPending[side][i])
                 continue;
+            cFielder* pFielder = pTeam->GetFielder(i);
+            const bool bEffectRunning = pFielder->m_tPowerupEffectTime.m_uPackedTime != 0;
+            s_fPendingFor[side][i] += fDeltaT;
+
+            if (pFielder->m_ePowerup == POWER_UP_STAR && bEffectRunning)
+            {
+                s_bPending[side][i] = false; // already a Star
+                continue;
+            }
+            if (pFielder->IsPlayingPowerupAnim())
+            {
+                if (s_fPendingFor[side][i] < kMaxWaitSeconds)
+                    continue; // mid-throw: try again next frame, once the item is out
+                // Waited long enough: drop the throw, or its trigger would later re-run ThrowPowerup on
+                // the Star below and hand out a full-length one.
+                pFielder->ClearPowerupAnimState(false);
+            }
+            if (pFielder->m_ePowerup == POWER_UP_MUSHROOM && bEffectRunning)
+            {
+                KillMushroom(pFielder);
+            }
+
             pFielder->m_ePowerup = POWER_UP_STAR;
             pFielder->mnNumPowerups = 1;
             pFielder->m_tPowerupEffectTime.SetSeconds(kStarSeconds);
             EmitStar(pFielder);
+            s_bPending[side][i] = false;
         }
     }
 }
