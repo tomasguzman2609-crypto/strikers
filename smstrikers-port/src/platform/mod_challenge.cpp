@@ -23,6 +23,8 @@ int g_activeChallenge = PORT_CHALLENGE_NONE;
 // a one-line file, and it sidesteps filesystems with coarse mtime resolution.
 std::string g_lastContent;
 
+PortModChallengeActionFilter g_actionFilter = nullptr;
+
 bool ReadFile(std::string& out)
 {
     FILE* f = fopen(g_path.c_str(), "rb");
@@ -48,7 +50,7 @@ void WriteFile(const char* content)
 int ParseChallenge(const std::string& content)
 {
     int value = atoi(content.c_str());
-    if (value < PORT_CHALLENGE_NONE || value > PORT_CHALLENGE_VANISH_ON_ELECTROCUTION)
+    if (value < PORT_CHALLENGE_NONE || value > PORT_CHALLENGE_SELFISH_CAPTAIN)
         return PORT_CHALLENGE_NONE;
     return value;
 }
@@ -100,6 +102,18 @@ extern "C" void PortModChallengeUpdate(void)
 extern "C" int PortModChallengeGetActive(void)
 {
     return g_activeChallenge;
+}
+
+extern "C" void PortModChallengeSetActionFilter(PortModChallengeActionFilter filter)
+{
+    g_actionFilter = filter;
+}
+
+extern "C" int PortModChallengeActionBlocked(int padIndex, int action)
+{
+    if (g_activeChallenge == PORT_CHALLENGE_NONE || g_actionFilter == nullptr)
+        return 0;
+    return g_actionFilter(padIndex, action);
 }
 
 extern "C" void PortModChallengeClear(void)

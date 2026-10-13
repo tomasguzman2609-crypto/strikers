@@ -3,6 +3,7 @@
 #include "Game/AI/AiUtil.h"
 #include "Game/AI/FilteredRandom.h"
 #include "Game/AI/Fuzzy.h"
+#include "Game/AI/SelfishCaptain.h"
 
 #include "Game/AI/AvoidController.h"
 #include "Game/AI/Fielder.h"
@@ -251,6 +252,22 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
         InitActionShot(false);
         return true;
     }
+
+    // PORT: challenge roulette - "Capitán Egoísta": an AI sidekick on a human team that decides to
+    // shoot passes to its captain instead (a human sidekick never gets here - its shoot button is
+    // filtered out at the pad). Refusing outright would leave the AI re-picking a shot every think
+    // and standing still with the ball.
+    if ((eDesireType == FIELDERDESIRE_SHOOT || eDesireType == FIELDERDESIRE_WINDUP_SHOT) && PortSelfishCaptainBlocksShot(this))
+    {
+        cFielder* pCaptain = m_pTeam->GetCaptain();
+        if (m_pBall != NULL && pCaptain != NULL && pCaptain != this && pCaptain->CanReceivePass())
+        {
+            return InitDesire(FIELDERDESIRE_PASS, fConfidence, -1.0f, FuzzyVariant((cPlayer*)pCaptain), FuzzyVariant(false));
+        }
+        AbortPendingThoughts();
+        return false;
+    }
+
     uQueuedThoughtHash = 0;
     bDesireInitSuccess = true;
     m_DesireCommonVars.tAge.m_uPackedTime = 0;

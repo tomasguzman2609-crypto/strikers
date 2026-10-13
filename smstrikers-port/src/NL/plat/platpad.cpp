@@ -36,12 +36,17 @@ PadStatus* padStatus = &padCategories[0];
 // normal passing too. That challenge is instead handled in cFielder::InitActionPass
 // (FielderActions.cpp), which already knows - via its bVolleyPass parameter - whether this
 // particular pass is actually a cross, and forces only that case back to a grounded pass.
-bool PortActionBlockedForPad0(int action)
+//
+// Challenges that depend on which fielder a pad drives (e.g. "Capitán Egoísta") are decided by the
+// game-side filter behind PortModChallengeActionBlocked(), since this layer can't see fielders. That
+// filter is skipped for releases (bFilter false): it only needs to stop an action from starting, and
+// the slide reads the shoot button's release to re-arm (the two actions share the B button).
+bool PortActionBlocked(int padIndex, int action, bool bFilter)
 {
     int challenge = PortModChallengeGetActive();
     if (challenge == PORT_CHALLENGE_NO_TACKLES && action == 25) // PAD_SLIDE_ATTACK
         return true;
-    return false;
+    return bFilter && PortModChallengeActionBlocked(padIndex, action) != 0;
 }
 
 // PORT: delta is real elapsed time; the console added a sixtieth per retrace.
@@ -319,7 +324,7 @@ f32 cPlatPad::GetButtonStateTime(int button, bool remap)
  */
 bool cPlatPad::PlatJustReleased(int button, bool remap)
 {
-    if (PortActionBlockedForPad0(button))
+    if (PortActionBlocked(m_padIndex, button, false))
         return false;
 
     if (remap)
@@ -336,7 +341,7 @@ bool cPlatPad::PlatJustReleased(int button, bool remap)
  */
 bool cPlatPad::PlatJustPressed(int button, bool remap)
 {
-    if (PortActionBlockedForPad0(button))
+    if (PortActionBlocked(m_padIndex, button, true))
         return false;
 
     if (remap)
@@ -353,7 +358,7 @@ bool cPlatPad::PlatJustPressed(int button, bool remap)
  */
 bool cPlatPad::IsPressed(int button, bool remap)
 {
-    if (PortActionBlockedForPad0(button))
+    if (PortActionBlocked(m_padIndex, button, true))
         return false;
 
     if (remap != 0)

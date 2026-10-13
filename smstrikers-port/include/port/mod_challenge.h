@@ -36,6 +36,9 @@ extern "C" {
 //     vanishes and its team plays a man down, never below 2 fielders), and should be labeled
 //     "Shock Fantasma" in the companion app. Unlike most challenges it is team-wide, not just the
 //     pad holder: the fence only shocks fielders knocked into it, rarely the one being controlled.
+//   - PORT_CHALLENGE_SELFISH_CAPTAIN (17) lets only the captain of a team with a real local player
+//     shoot at goal (every kind of shot); for anyone else the shoot button does nothing, and AI
+//     teammates pass instead. Should be labeled "Capitán Egoísta" in the companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -55,6 +58,7 @@ enum ePortChallenge
     PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU = 14, // a CPU-controlled fielder stunned by the electric fence only stays stunned 0.15s (real players unaffected) - "Shocks Cortos"
     PORT_CHALLENGE_OPPONENT_DOUBLE_GOALS = 15,   // a CPU-only team's goal is worth double (normal goal counts as 2, a Super Strike counts as 4) - "Gol Doble Rival"
     PORT_CHALLENGE_VANISH_ON_ELECTROCUTION = 16, // any fielder of a human team shocked by the electric fence vanishes for the rest of the match (team keeps >= 2 fielders) - "Shock Fantasma"
+    PORT_CHALLENGE_SELFISH_CAPTAIN = 17,         // on a human team only the captain can shoot at goal; the shoot button does nothing for anyone else - "Capitán Egoísta"
 };
 
 // Locates the mods/ folder beside the executable. Cheap even if it is missing; the challenge file
@@ -69,6 +73,14 @@ void PortModChallengeUpdate(void);
 // The currently active challenge (an ePortChallenge value). PORT_CHALLENGE_NONE if no mods/
 // folder, no challenge.txt, or its contents don't parse as a known value.
 int PortModChallengeGetActive(void);
+
+// Optional veto on a pad action, for challenges that depend on game state the input layer can't see
+// (e.g. which fielder a pad currently controls). The game registers one at startup; the platform pad
+// code asks PortModChallengeActionBlocked() before reporting an action as pressed/released. action is
+// the game's ePadActions id; return non-zero to make that action read as not pressed for that pad.
+typedef int (*PortModChallengeActionFilter)(int padIndex, int action);
+void PortModChallengeSetActionFilter(PortModChallengeActionFilter filter);
+int PortModChallengeActionBlocked(int padIndex, int action);
 
 // Resets the active challenge to PORT_CHALLENGE_NONE, both in memory and by rewriting
 // challenge.txt, so the companion app can tell the match ended and offer another spin. Call this

@@ -1,5 +1,6 @@
 #include "port/region.h"  // PORT: one binary, three discs
 #include "Game/AI/Fielder.h"
+#include "Game/AI/SelfishCaptain.h"
 #include "Game/AI/ShockFantasma.h"
 #include "Game/MathHelpers.h"
 #include "Game/AI/FielderActions.h"
@@ -5293,7 +5294,12 @@ void cFielder::TestButtonsRunning()
         cFielder* pPassTarget = (cFielder*)g_pBall->GetPassTargetFielder();
         bool bIsVolleyShotToMe = CanPassTargetAttemptOneTouch(pPassTarget);
 
-        if (bIsVolleyShotToMe)
+        // PORT: challenge roulette - "Capitán Egoísta": the slide button (the same B button as the
+        // shoot button, which the pad filter already blocks) also triggers these two shots, so they
+        // need their own check. A blocked sidekick falls through to the plain slide tackle below.
+        bool bPortNoShot = PortSelfishCaptainBlocksShot(this);
+
+        if (bIsVolleyShotToMe && !bPortNoShot)
         {
             cFielder* pOneTouchTarget = (cFielder*)g_pBall->GetPassTargetFielder();
             bool shouldAttempt = false;
@@ -5313,7 +5319,7 @@ void cFielder::TestButtonsRunning()
             pOneTouchTarget->m_DesireReceivePassSharedVars.iAttemptOneTouchPass = 0;
             pOneTouchTarget->m_DesireReceivePassSharedVars.pOneTouchPassTarget = NULL;
         }
-        else if (CanLooseBallShoot())
+        else if (!bPortNoShot && CanLooseBallShoot())
         {
             GameTweaks* tweaks = g_pGame->m_pGameTweaks;
             bool bChipShot = GetGlobalPad()->GetPressure(PAD_AIM, true) > tweaks->fLeftTriggerDownPressure;
@@ -6579,6 +6585,10 @@ bool cFielder::DoAILooseBallActionSelection()
             float fReactionRandom = 0.5f * fPerturbPercent;
             if (!(fActionScore >= 0.5f + (nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom)))
                 break;
+            // PORT: challenge roulette - "Capitán Egoísta": an AI sidekick doesn't shoot a loose ball
+            // either; skipping lets it pick another loose-ball action (a pass) instead.
+            if (PortSelfishCaptainBlocksShot(this))
+                break;
             InitActionLooseBallShot(looseBallAction.ExtraData.mData.b);
             bDidSomething = true;
             break;
@@ -6678,6 +6688,9 @@ bool cFielder::DoAIReceivePassActionSelection()
         {
             float fReactionRandom = 0.5f * fPerturbPercent;
             if (!(fActionScore >= 0.5f + (nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom)))
+                break;
+            // PORT: challenge roulette - "Capitán Egoísta": no one-timer on goal for an AI sidekick.
+            if (PortSelfishCaptainBlocksShot(this))
                 break;
             m_DesireReceivePassSharedVars.iAttemptOneTouchShot = looseBallAction.ExtraData.mData.b ? 2 : 1;
             bDidSomething = true;

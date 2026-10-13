@@ -3,6 +3,7 @@
 #include "Game/Sys/eventman.h"
 #include "Game/Team.h"
 #include "Game/AI/Fielder.h"
+#include "Game/AI/SelfishCaptain.h"
 #include "Game/AI/ShockFantasma.h"
 #include "Game/AI/ScriptAction.h"
 #include "Game/AI/Powerups.h"
@@ -248,6 +249,9 @@ cGame::cGame()
     , mIsPure(false)
     , mInSuddenDeath(false)
 {
+    // PORT: challenge roulette - "Capitán Egoísta" needs to veto the shoot button per fielder.
+    PortSelfishCaptainInit();
+
     m_pPostResetClock = new (nlMalloc(sizeof(Clock), 8, false)) Clock(0.0f, 2.0f, 1.0f, 2, cGame::PostResetCallback);
     m_pPostResetClock->m_uParam1 = (uintptr_t)this;
 
