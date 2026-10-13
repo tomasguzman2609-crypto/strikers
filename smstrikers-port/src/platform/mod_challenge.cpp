@@ -50,7 +50,7 @@ void WriteFile(const char* content)
 int ParseChallenge(const std::string& content)
 {
     int value = atoi(content.c_str());
-    if (value < PORT_CHALLENGE_NONE || value > PORT_CHALLENGE_HOT_POTATO)
+    if (value < PORT_CHALLENGE_NONE || value > PORT_CHALLENGE_ELECTRIC_TACKLES)
         return PORT_CHALLENGE_NONE;
     return value;
 }

@@ -49,6 +49,10 @@ extern "C" {
 //   - PORT_CHALLENGE_HOT_POTATO (20) blows up any fielder of a team with a real local player who
 //     keeps the ball for more than 1.5s: an explosion, a bomb knockdown, and the ball goes loose.
 //     Should be labeled "Papa Caliente" in the companion app.
+//   - PORT_CHALLENGE_ELECTRIC_TACKLES (21) turns a CPU-only team's successful tackles - both the
+//     shoulder charge (ACTION_HIT) and the slide (ACTION_SLIDE_ATTACK) - on a fielder of a team with a
+//     real local player into an electric-fence shock instead of the usual knockdown. Should be
+//     labeled "Tackles Eléctricos" in the companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -72,6 +76,7 @@ enum ePortChallenge
     PORT_CHALLENGE_OPPONENT_LEAD_LOSES = 18,     // the match ends immediately (a loss) as soon as a CPU-only team leads a human team - "Ventaja Oponente = Perdiste"
     PORT_CHALLENGE_AGGRESSIVE_BOWSER = 19,       // Bowser comes far more often and lands on a human team's ball carrier - "Bowser Agresivo"
     PORT_CHALLENGE_HOT_POTATO = 20,              // a human team's fielder holding the ball over 1.5s explodes and loses it - "Papa Caliente"
+    PORT_CHALLENGE_ELECTRIC_TACKLES = 21,        // a CPU team's hit or slide on a human team's fielder electrocutes them like the fence - "Tackles Eléctricos"
 };
 
 // Locates the mods/ folder beside the executable. Cheap even if it is missing; the challenge file

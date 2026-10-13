@@ -1628,6 +1628,42 @@ void cFielder::ActionHit(float fDeltaT)
 /**
  * Offset/Address/Size: 0x66F4 | 0x8002D22C | size: 0x398
  */
+// PORT: challenge roulette - "Tackles Eléctricos": true if this hit/slide reaction should become an
+// electrocution instead. Only a real tackle counts (the attacker is a fielder in ACTION_HIT or
+// ACTION_SLIDE_ATTACK), not the other callers of these reactions - goalie dives, a Super Strike's
+// blast, a powerup run-over - and only a CPU-only team tackling a team with a real local player.
+static bool PortTeamHasHumanPad(cTeam* pTeam)
+{
+    if (pTeam == NULL)
+        return false;
+    for (int i = 0; i < 5; i++)
+    {
+        cPlayer* pPlayer = pTeam->GetPlayer(i);
+        if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL)
+            return true;
+    }
+    return false;
+}
+
+static bool PortElectricTackle(cFielder* pVictim, cPlayer* pAttacker)
+{
+    if (PortModChallengeGetActive() != PORT_CHALLENGE_ELECTRIC_TACKLES || pAttacker == NULL)
+        return false;
+    if (pAttacker->m_eClassType != FIELDER || !((cFielder*)pAttacker)->IsAttacking())
+        return false;
+    return PortTeamHasHumanPad(pVictim->m_pTeam) && !PortTeamHasHumanPad(pAttacker->m_pTeam);
+}
+
+// Shocks pVictim as if they had hit the fence, facing the attacker, so the fence's end-of-stun launch
+// throws them away from the tackle. The caller has already released the ball.
+static void PortElectrocuteFromTackle(cFielder* pVictim, cPlayer* pAttacker)
+{
+    nlVector3 v3AwayFromAttacker;
+    nlVec3Set(v3AwayFromAttacker, pVictim->m_v3Position.x - pAttacker->m_v3Position.x,
+              pVictim->m_v3Position.y - pAttacker->m_v3Position.y, 0.0f);
+    pVictim->InitActionElectrocution(pVictim->m_v3Position, v3AwayFromAttacker);
+}
+
 bool cFielder::InitActionHitReact(cPlayer* pAttacker, unsigned short desiredFacingDirection, bool bDoFrameLock)
 {
     CleanUpPowerupEffect();
@@ -1663,6 +1699,15 @@ bool cFielder::InitActionHitReact(cPlayer* pAttacker, unsigned short desiredFaci
     else if (pAttacker->m_eClassType == FIELDER && ((cFielder*)pAttacker)->IsHitting())
     {
         ((cFielder*)pAttacker)->DoPenaltyCardBooking(this, PEN_TYPE_HIT_NO_BALL);
+    }
+
+    // PORT: challenge roulette - "Tackles Eléctricos": the ball is already loose; shock instead of
+    // the hit reaction.
+    if (PortElectricTackle(this, pAttacker))
+    {
+        BeginRumbleAction(RUMBLE_SOLID_CONTACT, GetGlobalPad());
+        PortElectrocuteFromTackle(this, pAttacker);
+        return true;
     }
 
     if (!mActionHitReactActionVars.bDoFrameLock)
@@ -4245,6 +4290,14 @@ void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
         {
             ReleaseBall();
             ShootBallDueToContact(pAttacker->m_v3Velocity);
+        }
+
+        // PORT: challenge roulette - "Tackles Eléctricos": shock instead of the slide reaction.
+        if (PortElectricTackle(this, pAttacker))
+        {
+            BeginRumbleAction(RUMBLE_MEDIUM_CONTACT, GetGlobalPad());
+            PortElectrocuteFromTackle(this, pAttacker);
+            return;
         }
 
         InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
