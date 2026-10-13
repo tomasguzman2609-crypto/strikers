@@ -3,6 +3,7 @@
 #include "Game/Sys/eventman.h"
 #include "Game/Team.h"
 #include "Game/AI/Fielder.h"
+#include "Game/AI/ShockFantasma.h"
 #include "Game/AI/ScriptAction.h"
 #include "Game/AI/Powerups.h"
 #include "Game/AI/AISandbox.h"
@@ -456,6 +457,9 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
 
     OSReport("[match] begin rematch=%d kickoff=%d\n",
              bRematch ? 1 : 0, bStraightToKickoff ? 1 : 0);
+
+    // PORT: challenge roulette - "Shock Fantasma" eliminations last one match only.
+    PortShockFantasmaReset();
 
     if (m_eGameState != GS_PRE_GAME)
     {
@@ -1210,6 +1214,11 @@ void cGame::Update(float deltaTime)
             }
         }
     }
+
+    // PORT: challenge roulette - keep "Shock Fantasma"'s eliminated fielders parked and away from
+    // the pad. Runs regardless of the active challenge: an elimination lasts until the next match,
+    // even once PortModChallengeClear() has reset the file at GS_END_GAME.
+    PortShockFantasmaUpdate();
 
     // PORT: the benchmark discards everything before this point.
     PortBenchMatchActive();

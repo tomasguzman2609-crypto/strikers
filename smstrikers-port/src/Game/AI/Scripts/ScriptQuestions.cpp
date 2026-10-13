@@ -5,6 +5,7 @@
 #include "Game/AI/AvoidController.h"
 #include "Game/AI/ShotMeter.h"
 #include "Game/AI/Fuzzy.h"
+#include "Game/AI/ShockFantasma.h"
 #include "Game/Game.h"
 #include "Game/GameInfo.h"
 #include "Game/GameTweaks.h"
@@ -1118,6 +1119,13 @@ float Incapacitated(cPlayer* pPlayer)
     {
         cFielder* pFielder = (cFielder*)pPlayer;
         fScore = pFielder->IsFrozen() || pFielder->IsFallenDown(25.0f) ? 1.0f : 0.0f;
+
+        // PORT: challenge roulette - a fielder eliminated by "Shock Fantasma" is out for good, so
+        // the AI scripts (pass targets, marking) must never count on it.
+        if (PortShockFantasmaIsEliminated(pFielder))
+        {
+            fScore = 1.0f;
+        }
     }
 
     return fScore;

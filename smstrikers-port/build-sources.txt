@@ -112,6 +112,7 @@ Game/AI/Scripts/RootScript.cpp
 Game/AI/Scripts/ScriptCaching.cpp
 Game/AI/Scripts/ScriptDefines.cpp
 Game/AI/Scripts/ScriptQuestions.cpp
+Game/AI/ShockFantasma.cpp
 Game/AI/ShotMeter.cpp
 Game/AI/SpaceSearch.cpp
 Game/AI/StatsGatherer.cpp

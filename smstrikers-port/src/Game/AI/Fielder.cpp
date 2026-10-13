@@ -1,5 +1,6 @@
 #include "port/region.h"  // PORT: one binary, three discs
 #include "Game/AI/Fielder.h"
+#include "Game/AI/ShockFantasma.h"
 #include "Game/MathHelpers.h"
 #include "Game/AI/FielderActions.h"
 #include "Game/AI/AIPlay.h"
@@ -474,6 +475,12 @@ bool cFielder::CanReceivePass()
     if (!IsFallenDown(0.0f) && (m_tFrozenTimer.m_uPackedTime == 0))
     {
         bCanReceivePass = true;
+    }
+
+    // PORT: challenge roulette - a fielder eliminated by "Shock Fantasma" is off the pitch.
+    if (PortShockFantasmaIsEliminated(this))
+    {
+        bCanReceivePass = false;
     }
 
     return bCanReceivePass;
@@ -1250,12 +1257,6 @@ void cFielder::CleanUpAction()
     case ACTION_ELECTROCUTION:
         m_v3Position.z = 0.0f;
         m_v3Velocity.z = 0.0f;
-        // PORT: challenge roulette - undo "Shock Fantasma" (PORT_CHALLENGE_VANISH_ON_ELECTROCUTION),
-        // which turns these off in InitActionElectrocution. Restored unconditionally (no challenge
-        // check) so a fielder can't stay non-solid if the challenge is cleared mid-stun, e.g. by
-        // PortModChallengeClear() at match end - same as ACTION_LOOSE_BALL_PASS/SHOT below.
-        m_pPhysicsCharacter->m_CanCollideWithBall = true;
-        m_pPhysicsCharacter->m_CanCollideWithWall = true;
         break;
 
     case ACTION_LOOSE_BALL_PASS:

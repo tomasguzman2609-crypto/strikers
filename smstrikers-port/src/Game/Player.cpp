@@ -6,6 +6,7 @@
 #include "Game/Net.h"
 
 #include "Game/AI/Fielder.h"
+#include "Game/AI/ShockFantasma.h"
 #include "Game/AI/ShotMeter.h"
 #include "Game/AI/SpaceSearch.h"
 #include "Game/AI/AiUtil.h"
@@ -404,7 +405,9 @@ u8 cPlayer::SwapController()
                     dz = pCandidate->m_v3Position.z - g_pBall->m_v3Position.z;
                     float fDist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
 
-                    if (pCandidate != this)
+                    // PORT: challenge roulette - never switch onto a fielder eliminated by
+                    // "Shock Fantasma".
+                    if (pCandidate != this && !PortShockFantasmaIsEliminated(pCandidate))
                     {
                         cGlobalPad* pCandidatePad = (pCandidate->m_pController != NULL) ? pCandidate->m_pController->m_pGlobalPad : NULL;
                         if (pCandidatePad == NULL && fDist < fBestDist)
@@ -967,6 +970,22 @@ cPlayer* cPlayer::DoFindBestPassTarget(bool bAllowLeadPass, bool bIsPerfectPass)
         if (pBestTarget == this)
         {
             pBestTarget = m_pTeam->GetMidfield();
+        }
+    }
+
+    // PORT: challenge roulette - the fallback above can land on a fielder eliminated by "Shock
+    // Fantasma" (CanReceivePass() already keeps the loop from picking one). Swap it for any active
+    // teammate; a team always keeps at least two fielders, so one exists.
+    if (PortShockFantasmaIsEliminated(pBestTarget))
+    {
+        for (s32 i = 0; i < 4; i++)
+        {
+            cFielder* pFallback = m_pTeam->GetFielder(i);
+            if (pFallback != this && !PortShockFantasmaIsEliminated(pFallback))
+            {
+                pBestTarget = pFallback;
+                break;
+            }
         }
     }
 

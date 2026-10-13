@@ -1,6 +1,7 @@
 #include "Game/Team.h"
 
 #include "Game/AI/Fielder.h"
+#include "Game/AI/ShockFantasma.h"
 #include "Game/Audio/WorldAudio.h"
 #include "Game/GameInfo.h"
 #include "Game/OverlayHandlerHUD.h"
@@ -482,7 +483,9 @@ void cTeam::UpdateControllers()
             {
                 for (int j = 0; j < 5; j++)
                 {
-                    if (m_pPlayers[j]->m_pController == NULL)
+                    // PORT: challenge roulette - never hand a pad to a fielder eliminated by
+                    // "Shock Fantasma"; the kickoff is taken by whoever holds the pad.
+                    if (m_pPlayers[j]->m_pController == NULL && !PortShockFantasmaIsEliminated(m_pPlayers[j]))
                     {
                         m_pPlayers[j]->SetAIPad(&pAIPads[i]);
                         break;

@@ -31,9 +31,9 @@ extern "C" {
 //   - PORT_CHALLENGE_OPPONENT_DOUBLE_GOALS (15) doubles however many goals a CPU-only team's goal
 //     is worth (1 -> 2 for a normal goal, 2 -> 4 for a Super Strike) and should be labeled
 //     "Gol Doble Rival" in the companion app.
-//   - PORT_CHALLENGE_VANISH_ON_ELECTROCUTION (16) makes a real local player stunned by the electric
-//     fence invisible and unable to collide with the ball or walls for the duration of the stun,
-//     and should be labeled "Shock Fantasma" in the companion app.
+//   - PORT_CHALLENGE_VANISH_ON_ELECTROCUTION (16) eliminates a real local player's fielder for the
+//     rest of the match when the electric fence's shock ends (it vanishes and its team plays a man
+//     down, never below 2 fielders), and should be labeled "Shock Fantasma" in the companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -52,7 +52,7 @@ enum ePortChallenge
     PORT_CHALLENGE_ONLY_CHIP_SHOTS = 13,    // every real player's shot on goal is forced to be a lobbed "globito" (chip shot) - "Modo Globito"
     PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU = 14, // a CPU-controlled fielder stunned by the electric fence only stays stunned 0.15s (real players unaffected) - "Shocks Cortos"
     PORT_CHALLENGE_OPPONENT_DOUBLE_GOALS = 15,   // a CPU-only team's goal is worth double (normal goal counts as 2, a Super Strike counts as 4) - "Gol Doble Rival"
-    PORT_CHALLENGE_VANISH_ON_ELECTROCUTION = 16, // a real local player stunned by the electric fence is invisible and non-solid for the duration - "Shock Fantasma"
+    PORT_CHALLENGE_VANISH_ON_ELECTROCUTION = 16, // a real local player's fielder shocked by the electric fence vanishes for the rest of the match (team keeps >= 2 fielders) - "Shock Fantasma"
 };
 
 // Locates the mods/ folder beside the executable. Cheap even if it is missing; the challenge file
