@@ -1921,6 +1921,35 @@ void DrawStackedNotice(const char* id, int row, double until, double now, const 
     ImGui::PopStyleVar();
 }
 
+// A progress bar for a multi-step achievement, shown briefly above the bottom tag each time it
+// advances, then gone - so the match stays clear the rest of the time.
+void DrawProgressNotice(const char* id, int row, double until, double now, const char* name, int progress,
+                        int target)
+{
+    if (now >= until || target <= 0)
+        return;
+    const ImGuiIO& io = ImGui::GetIO();
+    const float scale = BannerScale();
+    const float left = (float)(until - now);
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, left < 0.4f ? left / 0.4f : 1.0f);
+    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, kGold);
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y - (36.0f + 30.0f * (float)row) * scale),
+                            ImGuiCond_Always, ImVec2(0.5f, 1.0f));
+    ImGui::SetNextWindowBgAlpha(0.6f);
+    if (ImGui::Begin(id, nullptr, kBannerFlags))
+    {
+        ImGui::SetWindowFontScale(1.3f * scale);
+        ImGui::TextColored(kGold, "%s", name);
+        ImGui::SameLine(0.0f, 10.0f * scale);
+        char count[32];
+        std::snprintf(count, sizeof count, "%d/%d", progress, target);
+        ImGui::ProgressBar((float)progress / (float)target, ImVec2(160.0f * scale, 0.0f), count);
+    }
+    ImGui::End();
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
+}
+
 void DrawPauseAchievements(void)
 {
     const int count = PortAchievementsCount();
@@ -1943,11 +1972,14 @@ void DrawPauseAchievements(void)
             const char* mark = view.state == PORT_ACH_DONE ? "[OK]" : (view.state == PORT_ACH_FAILED ? "[X] " : "[  ]");
             const ImVec4 colour = view.state == PORT_ACH_DONE ? kGreen : (view.state == PORT_ACH_FAILED ? kGrey : kGold);
             ImGui::Separator();
-            if (view.target > 1)
-                ImGui::TextColored(colour, "%s %s   %d/%d", mark, view.name, view.progress, view.target);
-            else
-                ImGui::TextColored(colour, "%s %s", mark, view.name);
+            ImGui::TextColored(colour, "%s %s", mark, view.name);
             ImGui::TextUnformatted(view.description);
+            char count[32];
+            std::snprintf(count, sizeof count, "%d/%d", view.progress, view.target);
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, colour);
+            ImGui::ProgressBar(view.target > 0 ? (float)view.progress / (float)view.target : 0.0f,
+                               ImVec2(260.0f * scale, 0.0f), count);
+            ImGui::PopStyleColor();
         }
         ImGui::Separator();
         if (PortAchievementsSkipAwarded())
@@ -2002,6 +2034,8 @@ static void DrawChallengeBanner(void)
     static const char* s_achNames[2] = { nullptr, nullptr };
     static int s_achStates[2] = { PORT_ACH_PENDING, PORT_ACH_PENDING };
     static double s_achNoticeUntil[2] = { 0.0, 0.0 };
+    static int s_achProgress[2] = { 0, 0 };
+    static double s_achProgressUntil[2] = { 0.0, 0.0 };
     static bool s_skipShown = false;
     static double s_skipNoticeUntil = 0.0;
 
@@ -2045,8 +2079,18 @@ static void DrawChallengeBanner(void)
             s_achNames[i] = view.name;
             s_achStates[i] = view.state;
             s_achNoticeUntil[i] = 0.0;
+            s_achProgress[i] = view.progress;
+            s_achProgressUntil[i] = 0.0;
             continue;
         }
+        // A step forward on a multi-step one that isn't finished yet (finishing gets the notice below).
+        if (view.name != nullptr && view.progress > s_achProgress[i] && view.target > 1
+            && view.state == PORT_ACH_PENDING)
+        {
+            s_achProgressUntil[i] = now + 1.5;
+        }
+        if (view.name != nullptr)
+            s_achProgress[i] = view.progress;
         if (view.name != nullptr && view.state != s_achStates[i])
         {
             s_achStates[i] = view.state;
@@ -2101,6 +2145,15 @@ static void DrawChallengeBanner(void)
         std::snprintf(text, sizeof text, "Logros: %s  ·  %s   (los dos = 1 skip · pausa para detalles)", a.name,
                       b.name);
         DrawStackedNotice("##ach_intro", row++, s_achIntroUntil, now, kGold, text);
+    }
+    for (int i = 0; i < 2; i++)
+    {
+        if (now >= s_achProgressUntil[i] || s_achNames[i] == nullptr || i >= achCount)
+            continue;
+        PortAchievementView view;
+        PortAchievementsGet(i, &view);
+        DrawProgressNotice(i == 0 ? "##ach_progress0" : "##ach_progress1", row++, s_achProgressUntil[i], now,
+                           view.name, view.progress, view.target);
     }
     for (int i = 0; i < 2; i++)
     {
