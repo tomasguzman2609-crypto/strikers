@@ -1,5 +1,6 @@
 #include "port/region.h"  // PORT: one binary, three discs
 #include "Game/AI/Fielder.h"
+#include "Game/AchievementHooks.h"
 #include "Game/AI/SelfishCaptain.h"
 #include "Game/AI/ShockFantasma.h"
 #include "Game/MathHelpers.h"
@@ -5142,6 +5143,11 @@ void cFielder::TestCollisionForInvicibility(cFielder* pOpponent)
 
     pReactee->InitActionSlideAttackReact(this, true);
 
+    // PORT: challenge roulette - a Star knocking someone over counts for "Triple Impacto" (not the
+    // Super Strike's invincibility, which isn't a powerup).
+    if (pAttacker->m_ePowerup == POWER_UP_STAR)
+        PortAchievementHooksPowerupHit(pAttacker, pReactee);
+
     PowerupBase::PlayPowerupSound(currPowerup, PowerupBase::PWRUP_SOUND_HIT, m_pPhysicsCharacter, 100.0f);
 
     if (pAttacker->CanPickupBall(g_pBall))
@@ -5799,6 +5805,10 @@ void cFielder::Update(float fDeltaT)
 void cFielder::ThrowPowerup()
 {
     cFielder* pTarget;
+
+    // PORT: challenge roulette - every powerup use starts a fresh "Triple Impacto" count.
+    if (m_ePowerup != POWER_UP_NONE)
+        PortAchievementHooksPowerupUsed(this);
 
     if (!g_pGame->mbCaptainShotToScoreOn)
     {

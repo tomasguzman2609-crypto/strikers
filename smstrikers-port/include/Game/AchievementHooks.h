@@ -24,14 +24,17 @@ void PortAchievementHooksTackle(cFielder* pVictim, cPlayer* pAttacker);
 // From InitActionElectrocution.
 void PortAchievementHooksElectrocuted(cFielder* pFielder);
 
-// From PowerupBase::CollisionCallback, for each fielder an item (shell, banana) hits directly.
-void PortAchievementHooksItemHit(const void* pItem, cPlayer* pThrower, cFielder* pVictim);
+// "Triple Impacto" counts the distinct players one powerup use hits. A use starts when a fielder
+// uses a powerup (ThrowPowerup: a whole triple-shell throw, a Bob-omb, a Star, a Chain Chomp) and
+// every hit until that fielder's next use belongs to it.
+void PortAchievementHooksPowerupUsed(cFielder* pUser);
 
-// From PowerupBase::Destroy: the item is gone, and its slot may be reused by a new one.
-void PortAchievementHooksItemGone(const void* pItem);
+// One of pUser's powerups (a shell, banana, Bob-omb blast, their Star, their Chain Chomp) knocked
+// pVictim over.
+void PortAchievementHooksPowerupHit(cPlayer* pUser, cFielder* pVictim);
 
-// From the Bob-omb explosion (Character.cpp, event 0x2C): how many fielders it knocked down.
-void PortAchievementHooksBlastHits(cPlayer* pThrower, int nHits);
+// From cGame::Update while a match is played (Gol Relámpago's window, challenge changes).
+void PortAchievementHooksTick(float fGameSeconds);
 
 // From the deke's turbo boost (ActionDeke).
 void PortAchievementHooksDekeBoost(cFielder* pFielder);

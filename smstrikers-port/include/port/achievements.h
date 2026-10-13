@@ -30,8 +30,14 @@ typedef struct PortAchievementView
     int state;               // ePortAchievementState
 } PortAchievementView;
 
-// Draws this match's two achievements and resets all progress. From cGame::BeginGame.
-void PortAchievementsBeginMatch(void);
+// Draws this match's two achievements and resets all progress. From cGame::BeginGame, after the
+// match's challenge is known: achievements that challenge makes impossible are never drawn.
+void PortAchievementsBeginMatch(int activeChallenge);
+
+// Once per frame while the match is played: fails "Gol Relámpago" once its window has passed, and
+// swaps out any pending achievement that the active challenge now makes impossible (the challenge
+// can change mid-match, e.g. under Maldición Rotativa or a late spin).
+void PortAchievementsTick(float gameSeconds);
 
 // No achievements this match (no human side, e.g. a demo).
 void PortAchievementsClear(void);
@@ -48,7 +54,8 @@ void PortAchievementsTackle(int interruptedCharge);
 // The opposing captain was electrocuted.
 void PortAchievementsOpponentCaptainShocked(void);
 
-// One item thrown by our side hit three players (either team's).
+// One powerup use of ours (a whole triple-shell throw, a Bob-omb, a Star, a Chain Chomp) hit three
+// distinct players (either team's).
 void PortAchievementsItemTripleHit(void);
 
 // One of our fielders got the speed boost a successful deke with turbo gives.

@@ -5,6 +5,7 @@
 #include "Game/Player.h"
 #include "Game/Team.h"
 #include "port/achievements.h"
+#include "port/mod_challenge.h"
 
 namespace
 {
@@ -13,15 +14,29 @@ namespace
 cFielder* s_pLastShooter = NULL;
 bool s_bLastShotWasChip = false;
 
-// Distinct fielders each live item has hit, for "Triple Impacto". Items come from a small pool and
-// are forgotten in PortAchievementHooksItemGone, so a few slots are plenty.
-struct ItemHits
+// "Triple Impacto": the distinct fielders each fielder's current powerup use has hit, indexed by
+// g_pTeams side and fielder slot.
+struct UseHits
 {
-    const void* pItem;
     cFielder* pVictims[3];
     int nVictims;
 };
-ItemHits s_itemHits[8];
+UseHits s_useHits[2][4];
+
+bool Locate(cPlayer* pPlayer, int& side, int& index)
+{
+    for (side = 0; side < 2; side++)
+    {
+        if (g_pTeams[side] == NULL || pPlayer->m_pTeam != g_pTeams[side])
+            continue;
+        for (index = 0; index < 4; index++)
+        {
+            if (g_pTeams[side]->GetFielder(index) == pPlayer)
+                return true;
+        }
+    }
+    return false;
+}
 
 bool TeamHasHuman(cTeam* pTeam)
 {
@@ -53,10 +68,11 @@ void PortAchievementHooksBeginMatch()
 {
     s_pLastShooter = NULL;
     s_bLastShotWasChip = false;
-    for (int i = 0; i < 8; i++)
-        s_itemHits[i].pItem = NULL;
+    for (int side = 0; side < 2; side++)
+        for (int i = 0; i < 4; i++)
+            s_useHits[side][i].nVictims = 0;
     if (OurSide() >= 0)
-        PortAchievementsBeginMatch();
+        PortAchievementsBeginMatch(PortModChallengeGetActive());
     else
         PortAchievementsClear();
 }
@@ -113,53 +129,36 @@ static bool IsOurs(cPlayer* pPlayer)
     return ourSide >= 0 && pPlayer != NULL && pPlayer->m_pTeam == g_pTeams[ourSide];
 }
 
-void PortAchievementHooksItemHit(const void* pItem, cPlayer* pThrower, cFielder* pVictim)
+void PortAchievementHooksPowerupUsed(cFielder* pUser)
 {
-    if (pItem == NULL || pVictim == NULL || !IsOurs(pThrower))
+    int side, index;
+    if (pUser != NULL && Locate(pUser, side, index))
+        s_useHits[side][index].nVictims = 0;
+}
+
+void PortAchievementHooksPowerupHit(cPlayer* pUser, cFielder* pVictim)
+{
+    int side, index;
+    if (pVictim == NULL || pVictim == pUser || !IsOurs(pUser) || !Locate(pUser, side, index))
         return;
 
-    ItemHits* pEntry = NULL;
-    ItemHits* pFree = NULL;
-    for (int i = 0; i < 8; i++)
+    UseHits& use = s_useHits[side][index];
+    if (use.nVictims >= 3)
+        return; // already counted
+    for (int i = 0; i < use.nVictims; i++)
     {
-        if (s_itemHits[i].pItem == pItem)
-            pEntry = &s_itemHits[i];
-        else if (s_itemHits[i].pItem == NULL && pFree == NULL)
-            pFree = &s_itemHits[i];
-    }
-    if (pEntry == NULL)
-    {
-        if (pFree == NULL)
-            return;
-        pEntry = pFree;
-        pEntry->pItem = pItem;
-        pEntry->nVictims = 0;
-    }
-
-    for (int i = 0; i < pEntry->nVictims; i++)
-    {
-        if (pEntry->pVictims[i] == pVictim)
+        if (use.pVictims[i] == pVictim)
             return;
     }
-    if (pEntry->nVictims < 3)
-        pEntry->pVictims[pEntry->nVictims++] = pVictim;
-    if (pEntry->nVictims == 3)
+    use.pVictims[use.nVictims++] = pVictim;
+    if (use.nVictims == 3)
         PortAchievementsItemTripleHit();
 }
 
-void PortAchievementHooksItemGone(const void* pItem)
+void PortAchievementHooksTick(float fGameSeconds)
 {
-    for (int i = 0; i < 8; i++)
-    {
-        if (s_itemHits[i].pItem == pItem)
-            s_itemHits[i].pItem = NULL;
-    }
-}
-
-void PortAchievementHooksBlastHits(cPlayer* pThrower, int nHits)
-{
-    if (nHits >= 3 && IsOurs(pThrower))
-        PortAchievementsItemTripleHit();
+    if (OurSide() >= 0)
+        PortAchievementsTick(fGameSeconds);
 }
 
 void PortAchievementHooksDekeBoost(cFielder* pFielder)

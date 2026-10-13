@@ -60,6 +60,7 @@ Slot g_slots[2];
 int g_count = 0;
 bool g_wasBehind = false;
 bool g_skipAwarded = false;
+int g_lastChallenge = -1;
 unsigned int g_pauseFrames = 0;
 
 unsigned int g_rng = 0;
@@ -70,6 +71,38 @@ unsigned int NextRandom()
         g_rng = (unsigned int)time(nullptr) * 2654435761u | 1u;
     g_rng = g_rng * 1664525u + 1013904223u;
     return g_rng >> 8;
+}
+
+// Whether a challenge makes an achievement impossible (so it is never drawn alongside it).
+bool Compatible(int id, int challenge)
+{
+    switch (id)
+    {
+    case ACH_TRIPLE_ITEM:
+        // No items at all, or only Mushrooms (which knock nobody over).
+        return challenge != PORT_CHALLENGE_NO_POWERUPS && challenge != PORT_CHALLENGE_ONLY_MUSHROOM;
+    case ACH_SUPER_GOAL:
+        // Charging a Super Strike means holding the ball well past Papa Caliente's limit.
+        return challenge != PORT_CHALLENGE_HOT_POTATO;
+    case ACH_COMEBACK:
+        // Being behind at all ends the match under Ventaja Oponente = Perdiste.
+        return challenge != PORT_CHALLENGE_OPPONENT_LEAD_LOSES;
+    default:
+        return true;
+    }
+}
+
+// A random achievement that the challenge allows and that isn't already one of this match's.
+int DrawCompatible(int challenge, int excludeA, int excludeB)
+{
+    int candidates[ACH_COUNT];
+    int n = 0;
+    for (int id = 0; id < ACH_COUNT; id++)
+    {
+        if (id != excludeA && id != excludeB && Compatible(id, challenge))
+            candidates[n++] = id;
+    }
+    return n > 0 ? candidates[NextRandom() % (unsigned int)n] : -1;
 }
 
 // Completing both of the match's achievements banks one roulette skip.
@@ -121,18 +154,42 @@ void Settle(int id, bool bDone)
 
 } // namespace
 
-extern "C" void PortAchievementsBeginMatch(void)
+extern "C" void PortAchievementsBeginMatch(int activeChallenge)
 {
-    int first = (int)(NextRandom() % ACH_COUNT);
-    int second = (int)(NextRandom() % (ACH_COUNT - 1));
-    if (second >= first)
-        second++;
+    const int first = DrawCompatible(activeChallenge, -1, -1);
+    const int second = DrawCompatible(activeChallenge, first, -1);
 
     g_slots[0] = { first, 0, PORT_ACH_PENDING };
     g_slots[1] = { second, 0, PORT_ACH_PENDING };
     g_count = 2;
     g_wasBehind = false;
     g_skipAwarded = false;
+    g_lastChallenge = activeChallenge;
+}
+
+extern "C" void PortAchievementsTick(float gameSeconds)
+{
+    if (g_count == 0)
+        return;
+
+    if (gameSeconds >= kFastGoalSeconds)
+        Settle(ACH_FAST_GOAL, false);
+
+    // A new challenge mid-match: replace any still-open achievement it makes impossible.
+    const int challenge = PortModChallengeGetActive();
+    if (challenge == g_lastChallenge)
+        return;
+    g_lastChallenge = challenge;
+    for (int i = 0; i < g_count; i++)
+    {
+        Slot& slot = g_slots[i];
+        if (slot.state != PORT_ACH_PENDING || Compatible(slot.id, challenge))
+            continue;
+        const int other = g_slots[1 - i].id;
+        const int replacement = DrawCompatible(challenge, slot.id, other);
+        if (replacement >= 0)
+            slot = { replacement, 0, PORT_ACH_PENDING };
+    }
 }
 
 extern "C" void PortAchievementsClear(void)

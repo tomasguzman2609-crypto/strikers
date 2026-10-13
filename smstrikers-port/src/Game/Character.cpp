@@ -969,9 +969,6 @@ void AIEventHandler(Event* pEvent, void*)
             break;
         }
 
-        // PORT: challenge roulette - "Triple Impacto": fielders this one explosion knocks down.
-        int nPortBlastHits = 0;
-
         for (s32 i = 0; i < 2; i++)
         {
             if (g_pTeams[i] != 0)
@@ -1020,7 +1017,8 @@ void AIEventHandler(Event* pEvent, void*)
                     if (!bIsWeaponSuccessful)
                         continue;
 
-                    nPortBlastHits++;
+                    // PORT: challenge roulette - "Triple Impacto" counts who the blast knocks down.
+                    PortAchievementHooksPowerupHit((cPlayer*)pEventData->pThrower, pFielder);
 
                     Event* pStatsEvent = g_pEventManager->CreateValidEvent(0x55, 0x20);
                     CollisionPowerupStatsData* pStatsData = new (&pStatsEvent->m_data) CollisionPowerupStatsData();
@@ -1028,8 +1026,6 @@ void AIEventHandler(Event* pEvent, void*)
                     pStatsData->nThrowerPadID = pEventData->nThrowerPadID;
                 }
             }
-
-            PortAchievementHooksBlastHits((cPlayer*)pEventData->pThrower, nPortBlastHits);
 
             g_pGame->BlowUpPowerups(pEventData->v3ExplosionLocation, pEventData->fExplosionRadius);
             SidelineExplodableManager::TriggerExplosions(pEventData->v3ExplosionLocation, pEventData->fExplosionRadius);

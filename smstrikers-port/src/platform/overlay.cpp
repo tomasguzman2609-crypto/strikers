@@ -2035,6 +2035,7 @@ static void DrawChallengeBanner(void)
     static int s_achStates[2] = { PORT_ACH_PENDING, PORT_ACH_PENDING };
     static double s_achNoticeUntil[2] = { 0.0, 0.0 };
     static int s_achProgress[2] = { 0, 0 };
+    static double s_achSwapUntil[2] = { 0.0, 0.0 };
     static double s_achProgressUntil[2] = { 0.0, 0.0 };
     static bool s_skipShown = false;
     static double s_skipNoticeUntil = 0.0;
@@ -2076,6 +2077,9 @@ static void DrawChallengeBanner(void)
             view.name = nullptr;
         if (view.name != s_achNames[i])
         {
+            // A different achievement in the same slot mid-match: the challenge changed and made the
+            // old one impossible, so it was swapped. (From nothing, it is just the match's draw.)
+            s_achSwapUntil[i] = (s_achNames[i] != nullptr && view.name != nullptr) ? now + 3.0 : 0.0;
             s_achNames[i] = view.name;
             s_achStates[i] = view.state;
             s_achNoticeUntil[i] = 0.0;
@@ -2154,6 +2158,14 @@ static void DrawChallengeBanner(void)
         PortAchievementsGet(i, &view);
         DrawProgressNotice(i == 0 ? "##ach_progress0" : "##ach_progress1", row++, s_achProgressUntil[i], now,
                            view.name, view.progress, view.target);
+    }
+    for (int i = 0; i < 2; i++)
+    {
+        if (now >= s_achSwapUntil[i] || s_achNames[i] == nullptr)
+            continue;
+        char text[256];
+        std::snprintf(text, sizeof text, "Logro cambiado por el reto: %s", s_achNames[i]);
+        DrawStackedNotice(i == 0 ? "##ach_swap0" : "##ach_swap1", row++, s_achSwapUntil[i], now, kGold, text);
     }
     for (int i = 0; i < 2; i++)
     {

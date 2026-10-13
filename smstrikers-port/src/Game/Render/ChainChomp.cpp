@@ -1,3 +1,4 @@
+#include "Game/AchievementHooks.h"
 #include "Game/Render/ChainChomp.h"
 #include "NL/vmath.h"
 
@@ -343,6 +344,9 @@ void ChainChomp::CollisionCallback(PhysicsObject* pPhysObj, PhysicsObject* pObjA
         CollisionChainPlayerData* pData = new (/* PORT: m_data is at 0x18 here. */ (u8*)&pEvent->m_data) CollisionChainPlayerData();
         pData->pFielder = pFielder;
         pData->pChain = pChainChomp;
+
+        // PORT: challenge roulette - the Chomp's victims count for "Triple Impacto".
+        PortAchievementHooksPowerupHit((cPlayer*)pChainChomp->mpThrower, pFielder);
     }
 }
 

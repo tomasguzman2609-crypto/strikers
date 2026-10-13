@@ -657,6 +657,21 @@ void cGame::CheckForGoal()
             if (m_eGameState != GS_END_GAME)
             {
                 PortModChallengeReroll();
+                // Drawing "Ventaja Oponente = Perdiste" while a CPU team is already ahead would end
+                // the match on the spot at the next CPU goal with no chance to react; draw again.
+                for (int nTry = 0; nTry < 8 && PortModChallengeGetActive() == PORT_CHALLENGE_OPPONENT_LEAD_LOSES; nTry++)
+                {
+                    bool bCpuLeads = false;
+                    for (int side = 0; side < 2; side++)
+                    {
+                        cTeam* pTeam = g_pTeams[side];
+                        if (!PortTeamHasHuman(pTeam) && pTeam->m_nScore > pTeam->GetOtherTeam()->m_nScore)
+                            bCpuLeads = true;
+                    }
+                    if (!bCpuLeads)
+                        break;
+                    PortModChallengeReroll();
+                }
             }
 
             GoalScoredDataExt* pGoalScored = new (/* PORT: m_data is at 0x18 here. */ (u8*)&g_pEventManager->CreateValidEvent(5, 0x3C)->m_data) GoalScoredDataExt();
@@ -1374,6 +1389,12 @@ void cGame::Update(float deltaTime)
                 }
             }
         }
+    }
+
+    // PORT: challenge roulette - achievements that depend on time or on the active challenge.
+    if (m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME)
+    {
+        PortAchievementHooksTick(GetGameTime());
     }
 
     // PORT: challenge roulette - "Estrella Intermitente" (see PortOpponentStarPulseUpdate above).

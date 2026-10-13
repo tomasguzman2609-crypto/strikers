@@ -1374,6 +1374,8 @@ void cFielder::ActionDeke(float dt)
 /**
  * Offset/Address/Size: 0x71BC | 0x8002DCF4 | size: 0x2EC
  */
+static bool PortTeamHasHumanPad(cTeam* pTeam); // PORT: defined with the "Tackles Eléctricos" helpers
+
 void cFielder::InitActionElectrocution(const nlVector3& wallPosition, const nlVector3& wallNormal)
 {
     InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
@@ -1405,10 +1407,11 @@ void cFielder::InitActionElectrocution(const nlVector3& wallPosition, const nlVe
         mActionElectrocutionVars.electrocutionTime *= 2.0f;
     }
 
-    // PORT: challenge roulette - "Shocks Cortos" shortens how long a CPU-controlled fielder stays
-    // stunned after hitting the electric fence (0.15s instead of the normal 1.0s). Real local
-    // players are unaffected - same "CPU only" shape as PORT_CHALLENGE_OPPONENT_FAST.
-    if (GetGlobalPad() == NULL && PortModChallengeGetActive() == PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU)
+    // PORT: challenge roulette - "Shocks Cortos" shortens how long a fielder of the CPU-only team
+    // stays stunned after hitting the electric fence (0.15s instead of the normal 1.0s). Decided by
+    // team, not by pad: the AI teammates of a real player are on the player's side and keep the
+    // full stun.
+    if (!PortTeamHasHumanPad(m_pTeam) && PortModChallengeGetActive() == PORT_CHALLENGE_SHORT_ELECTROCUTION_CPU)
     {
         mActionElectrocutionVars.electrocutionTime = 0.15f;
     }

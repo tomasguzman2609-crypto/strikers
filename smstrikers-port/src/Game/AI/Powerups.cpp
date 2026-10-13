@@ -1564,8 +1564,8 @@ void PowerupBase::CollisionCallback(PhysicsObject* pObjA, PhysicsObject* pObjB, 
 
     if (pPlayerTarget != NULL)
     {
-        // PORT: challenge roulette - "Triple Impacto" counts the fielders each item hits.
-        PortAchievementHooksItemHit(pObj, (cPlayer*)pObj->m_pThrower, (cFielder*)pPlayerTarget);
+        // PORT: challenge roulette - "Triple Impacto" counts the fielders each powerup use hits.
+        PortAchievementHooksPowerupHit((cPlayer*)pObj->m_pThrower, (cFielder*)pPlayerTarget);
 
         Event* pEvent = g_pEventManager->CreateValidEvent(0x1E, 0x24);
         PowerupHitPlayerEventData* pData = new (/* PORT: m_data is at 0x18 here. */ (u8*)&pEvent->m_data) PowerupHitPlayerEventData();
@@ -1806,8 +1806,6 @@ static inline void UnregisterPowerup(unsigned long hashID)
  */
 void PowerupBase::Destroy(bool bSilent)
 {
-    // PORT: challenge roulette - forget this item's "Triple Impacto" hits; its slot may be reused.
-    PortAchievementHooksItemGone(this);
 
     void FireCameraRumbleFilter(float, float);
     struct CollisionBobombDataLayout
