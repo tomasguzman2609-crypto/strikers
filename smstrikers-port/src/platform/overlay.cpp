@@ -1949,6 +1949,11 @@ void DrawPauseAchievements(void)
                 ImGui::TextColored(colour, "%s %s", mark, view.name);
             ImGui::TextUnformatted(view.description);
         }
+        ImGui::Separator();
+        if (PortAchievementsSkipAwarded())
+            ImGui::TextColored(kGreen, "¡Skip de ruleta ganado!");
+        else
+            ImGui::TextColored(kGrey, "Completa los dos para ganar un skip de ruleta");
     }
     ImGui::End();
 }
@@ -1997,6 +2002,8 @@ static void DrawChallengeBanner(void)
     static const char* s_achNames[2] = { nullptr, nullptr };
     static int s_achStates[2] = { PORT_ACH_PENDING, PORT_ACH_PENDING };
     static double s_achNoticeUntil[2] = { 0.0, 0.0 };
+    static bool s_skipShown = false;
+    static double s_skipNoticeUntil = 0.0;
 
     if (s_framesSinceMatch > 30)
     {
@@ -2012,6 +2019,18 @@ static void DrawChallengeBanner(void)
         s_shownChallenge = PORT_CHALLENGE_NONE;
         s_achIntroUntil = achCount > 0 ? now + 6.0 : 0.0;
         s_achNames[0] = s_achNames[1] = nullptr;
+        s_skipShown = PortAchievementsSkipAwarded() != 0;
+        s_skipNoticeUntil = 0.0;
+    }
+
+    if (PortAchievementsSkipAwarded() && !s_skipShown)
+    {
+        s_skipShown = true;
+        s_skipNoticeUntil = now + 4.0;
+    }
+    else if (!PortAchievementsSkipAwarded())
+    {
+        s_skipShown = false;
     }
 
     // Achievement transitions. A new draw (different names) resets the tracking rather than notifying.
@@ -2079,7 +2098,8 @@ static void DrawChallengeBanner(void)
         PortAchievementsGet(0, &a);
         PortAchievementsGet(1, &b);
         char text[256];
-        std::snprintf(text, sizeof text, "Logros: %s  ·  %s   (pausa para ver detalles)", a.name, b.name);
+        std::snprintf(text, sizeof text, "Logros: %s  ·  %s   (los dos = 1 skip · pausa para detalles)", a.name,
+                      b.name);
         DrawStackedNotice("##ach_intro", row++, s_achIntroUntil, now, kGold, text);
     }
     for (int i = 0; i < 2; i++)
@@ -2094,6 +2114,10 @@ static void DrawChallengeBanner(void)
         DrawStackedNotice(i == 0 ? "##ach_notice0" : "##ach_notice1", row++, s_achNoticeUntil[i], now,
                           s_achStates[i] == PORT_ACH_DONE ? kGreen : kGrey, text);
     }
+
+    if (now < s_skipNoticeUntil)
+        DrawStackedNotice("##ach_skip", row++, s_skipNoticeUntil, now, kGreen,
+                          "¡Logros completos! +1 skip de ruleta");
 
     // "Maldición Rotativa" only: one second in the middle of the screen for each new draw.
     if (now < s_curseNoticeUntil)

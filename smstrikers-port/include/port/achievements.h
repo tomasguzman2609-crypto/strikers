@@ -51,6 +51,10 @@ void PortAchievementsOpponentCaptainShocked(void);
 // The match ended with this final score. From GS_END_GAME.
 void PortAchievementsMatchEnd(int scoreFor, int scoreAgainst);
 
+// Non-zero once both of this match's achievements are done, which banks a roulette skip
+// (PortModChallengeAwardSkip) - once per match.
+int PortAchievementsSkipAwarded(void);
+
 // 0 before the first match (or when the match has no human side), else 2.
 int PortAchievementsCount(void);
 void PortAchievementsGet(int index, PortAchievementView* out);

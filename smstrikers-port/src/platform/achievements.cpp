@@ -1,6 +1,7 @@
 // See include/port/achievements.h.
 
 #include "port/achievements.h"
+#include "port/mod_challenge.h"
 
 #include <ctime>
 
@@ -54,6 +55,7 @@ struct Slot
 Slot g_slots[2];
 int g_count = 0;
 bool g_wasBehind = false;
+bool g_skipAwarded = false;
 unsigned int g_pauseFrames = 0;
 
 unsigned int g_rng = 0;
@@ -64,6 +66,20 @@ unsigned int NextRandom()
         g_rng = (unsigned int)time(nullptr) * 2654435761u | 1u;
     g_rng = g_rng * 1664525u + 1013904223u;
     return g_rng >> 8;
+}
+
+// Completing both of the match's achievements banks one roulette skip.
+void CheckReward()
+{
+    if (g_skipAwarded || g_count == 0)
+        return;
+    for (int i = 0; i < g_count; i++)
+    {
+        if (g_slots[i].state != PORT_ACH_DONE)
+            return;
+    }
+    g_skipAwarded = true;
+    PortModChallengeAwardSkip();
 }
 
 // Adds to progress on an active achievement and completes it at its target. No-op if this match
@@ -82,6 +98,7 @@ void Advance(int id, int amount)
             slot.state = PORT_ACH_DONE;
         }
     }
+    CheckReward();
 }
 
 void Settle(int id, bool bDone)
@@ -95,6 +112,7 @@ void Settle(int id, bool bDone)
         if (bDone)
             slot.progress = kDefinitions[id].target;
     }
+    CheckReward();
 }
 
 } // namespace
@@ -110,6 +128,7 @@ extern "C" void PortAchievementsBeginMatch(void)
     g_slots[1] = { second, 0, PORT_ACH_PENDING };
     g_count = 2;
     g_wasBehind = false;
+    g_skipAwarded = false;
 }
 
 extern "C" void PortAchievementsClear(void)
@@ -164,6 +183,11 @@ extern "C" void PortAchievementsMatchEnd(int scoreFor, int scoreAgainst)
         if (g_slots[i].state == PORT_ACH_PENDING)
             g_slots[i].state = PORT_ACH_FAILED;
     }
+}
+
+extern "C" int PortAchievementsSkipAwarded(void)
+{
+    return g_skipAwarded ? 1 : 0;
 }
 
 extern "C" int PortAchievementsCount(void)

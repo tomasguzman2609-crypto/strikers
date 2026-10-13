@@ -16,6 +16,7 @@ namespace
 constexpr int kPollEveryNFrames = 30;
 
 std::string g_path;
+std::string g_modsDir;
 bool g_havePath = false;
 int g_pollCountdown = 0;
 int g_activeChallenge = PORT_CHALLENGE_NONE;
@@ -105,7 +106,8 @@ extern "C" void PortModChallengeInit(void)
         g_havePath = false;
         return;
     }
-    g_path = std::string(dir) + "/mods/challenge.txt";
+    g_modsDir = std::string(dir) + "/mods";
+    g_path = g_modsDir + "/challenge.txt";
     g_havePath = true;
     g_pollCountdown = 0;
     g_activeChallenge = PORT_CHALLENGE_NONE;
@@ -116,6 +118,45 @@ extern "C" void PortModChallengeInit(void)
     {
         g_lastContent = content;
         SetSelected(ParseChallenge(content));
+    }
+
+    // Whatever the last run left behind (e.g. a crash mid-match), no match is being played yet.
+    PortModChallengeSetMatchPlaying(0);
+}
+
+extern "C" void PortModChallengeAwardSkip(void)
+{
+    if (!g_havePath)
+        return;
+    const std::string path = g_modsDir + "/skips.txt";
+
+    // Read-modify-write: the companion app may have spent some since the last award.
+    int skips = 0;
+    if (FILE* f = fopen(path.c_str(), "rb"))
+    {
+        char buf[32];
+        size_t n = fread(buf, 1, sizeof buf - 1, f);
+        fclose(f);
+        buf[n] = '\0';
+        skips = atoi(buf);
+        if (skips < 0)
+            skips = 0;
+    }
+    if (FILE* f = fopen(path.c_str(), "wb"))
+    {
+        fprintf(f, "%d", skips + 1);
+        fclose(f);
+    }
+}
+
+extern "C" void PortModChallengeSetMatchPlaying(int playing)
+{
+    if (!g_havePath)
+        return;
+    if (FILE* f = fopen((g_modsDir + "/match_status.txt").c_str(), "wb"))
+    {
+        fputs(playing ? "1" : "0", f);
+        fclose(f);
     }
 }
 

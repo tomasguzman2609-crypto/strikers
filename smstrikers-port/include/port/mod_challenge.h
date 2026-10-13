@@ -112,6 +112,14 @@ void PortModChallengeReroll(void);
 // PORT_CHALLENGE_NONE or an unknown ID. Kept in step with the companion app's CHALLENGES list.
 const char* PortModChallengeName(int challenge);
 
+// Files beside challenge.txt that the companion app reads, for the achievements' reward:
+//   - mods/skips.txt holds the number of roulette re-spins ("skips") the player has banked. The game
+//     adds one with PortModChallengeAwardSkip(); the companion app spends them.
+//   - mods/match_status.txt is "1" while a match is being played and "0" otherwise, so the companion
+//     app only offers a skip between matches.
+void PortModChallengeAwardSkip(void);
+void PortModChallengeSetMatchPlaying(int playing);
+
 // The game calls this once per frame while a match is being updated, so the on-screen challenge
 // banner (overlay.cpp) can tell a match apart from menus and loading screens.
 void PortModChallengeNoteMatchFrame(void);

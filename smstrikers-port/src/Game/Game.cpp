@@ -283,6 +283,9 @@ cGame::cGame()
  */
 cGame::~cGame()
 {
+    // PORT: challenge roulette - covers quitting mid-match, which never reaches GS_END_GAME.
+    PortModChallengeSetMatchPlaying(0);
+
     mThoughtsQueue.Clear();
 
     delete m_pPostResetClock;
@@ -468,8 +471,10 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
     PortShockFantasmaReset();
     // PORT: challenge roulette - "Maldición Rotativa" draws a fresh challenge for each new match.
     PortModChallengeReroll();
-    // PORT: challenge roulette - this match's two achievements.
+    // PORT: challenge roulette - this match's two achievements, and tell the companion app a match
+    // is on (it only lets a roulette skip be spent between matches).
     PortAchievementHooksBeginMatch();
+    PortModChallengeSetMatchPlaying(1);
 
     if (m_eGameState != GS_PRE_GAME)
     {
@@ -1747,6 +1752,7 @@ void cGame::InitGameState(eGameState state)
         // Achievements are settled first, while the challenge state is still the match's.
         PortAchievementHooksMatchEnd();
         PortModChallengeClear();
+        PortModChallengeSetMatchPlaying(0);
         break;
 
     case GS_GAMEPLAY:
