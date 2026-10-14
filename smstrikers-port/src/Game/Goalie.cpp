@@ -143,6 +143,8 @@ Goalie::~Goalie()
     LooseBallAnims::Destroy();
 }
 
+static void PortReflectUpdate(Goalie* pGoalie, float dt); // PORT: "Arquero Reflectante", defined below
+
 /**
  * Offset/Address/Size: 0xB598 | 0x8004E094 | size: 0x17C
  */
@@ -175,6 +177,9 @@ void Goalie::Update(float dt)
     UpdateActionState(dt);
     mFatigue.Update(dt);
     cCharacter::Update(dt);
+
+    // PORT: challenge roulette - "Arquero Reflectante" (see PortReflectUpdate).
+    PortReflectUpdate(this, dt);
 
     if (!mbIsPosed)
     {
@@ -229,8 +234,104 @@ static SaveData* PortFindBestSave(const Goalie* pGoalie, SaveBlendInfo& blendInf
     return pSaveData;
 }
 
+// PORT: challenge roulette - "Arquero Reflectante" (PORT_CHALLENGE_REFLECTING_GOALIE): a CPU-only
+// team's goalie fires back every shot of a human team's fielder that it saves, the way it swats back
+// a failed Super Strike (HandleSTSSwat): hard, straight at the shooter, as a "damage" ball that knocks
+// down whoever it touches (PhysicsCharacter::PostUpdate). The save itself plays out as usual; the
+// swat follows a moment later from Goalie::Update, so it reads as "caught it and fired it back", and
+// is dropped if the save left the goalie dazed (STS_RECOVER) or the ball is gone by then. Super
+// Strikes are left alone - they have their own swat.
+static Goalie* s_pReflectGoalie = NULL;
+static cFielder* s_pReflectShooter = NULL;
+static float s_fReflectDelay = 0.0f;
+
+static bool PortTeamHasHumanPad(cTeam* pTeam)
+{
+    if (pTeam == NULL)
+        return false;
+    for (int i = 0; i < 5; i++)
+    {
+        cPlayer* pPlayer = pTeam->GetPlayer(i);
+        if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL)
+            return true;
+    }
+    return false;
+}
+
+// From CollideWithBallCallback, before the save is handled: remembers a shot to fire back.
+static void PortReflectNoteSave(Goalie* pGoalie, cBall* pBall)
+{
+    if (PortModChallengeGetActive() != PORT_CHALLENGE_REFLECTING_GOALIE)
+        return;
+    if (pGoalie->mGoalieActionState != GOALIEACTION_SAVE || pGoalie->mbBallImpacted || pGoalie->mbShouldMiss)
+        return;
+    if (pBall->m_tShotTimer.m_uPackedTime == 0 || pBall->m_pShooter == NULL || pBall->m_pShooter->m_eClassType != FIELDER)
+        return;
+    if (PortTeamHasHumanPad(pGoalie->m_pTeam) || !PortTeamHasHumanPad(pBall->m_pShooter->m_pTeam))
+        return;
+
+    s_pReflectGoalie = pGoalie;
+    s_pReflectShooter = (cFielder*)pBall->m_pShooter;
+    s_fReflectDelay = 0.2f;
+}
+
+// From Goalie::Update: fires the remembered shot back once its delay is up.
+static void PortReflectUpdate(Goalie* pGoalie, float dt)
+{
+    if (s_pReflectGoalie != pGoalie)
+        return;
+    s_fReflectDelay -= dt;
+    if (s_fReflectDelay > 0.0f)
+        return;
+
+    cFielder* pShooter = s_pReflectShooter;
+    s_pReflectGoalie = NULL;
+    s_pReflectShooter = NULL;
+
+    if (!g_pGame->IsGameplayOrOvertime() || pShooter == NULL)
+        return;
+    if (pGoalie->mGoalieActionState == GOALIEACTION_STS_RECOVER)
+        return; // dazed by the shot: no comeback
+    if (pGoalie->m_pBall != NULL)
+        pGoalie->ReleaseBall();
+    if (g_pBall->m_pOwner != NULL)
+        return; // someone else already has it
+    float bx = g_pBall->m_v3Position.x - pGoalie->m_v3Position.x;
+    float by = g_pBall->m_v3Position.y - pGoalie->m_v3Position.y;
+    if (bx * bx + by * by > 6.0f * 6.0f)
+        return; // deflected well away
+
+    // As HandleSTSSwat, aimed at the shooter instead of mpShooter.
+    nlVector3 v3Target = pShooter->m_v3Position;
+    nlVector3 v3BallVelocity;
+    float dx = g_pBall->m_v3Position.x - v3Target.x;
+    float dy = g_pBall->m_v3Position.y - v3Target.y;
+    float fDistance = nlSqrt(dx * dx + dy * dy, true);
+    float fSpeed = InterpolateRangeClamped(22.0f, 28.0f, 5.0f, 15.0f, fDistance);
+    v3Target.z += 0.5f;
+
+    g_pBall->ShootAtFast(v3BallVelocity, v3Target, fDistance / fSpeed);
+    g_pBall->ShootRelease(v3BallVelocity, SPINTYPE_FORWARD);
+
+    g_pBall->m_unk_0xA6 = true;
+    g_pBall->m_tNoPickupTimer.SetSeconds(0.2f);
+    g_pBall->mpDamageTarget = pShooter;
+
+    EmitBallShot(pShooter, BALL_EFFECT_S2S_SHOT, NULL, false);
+    g_pBall->InitiateBallBlur(BALL_EFFECT_S2S_SHOT, pShooter);
+
+    Audio::SoundAttributes sndAtr;
+    sndAtr.Init();
+    sndAtr.SetSoundType(0xBD, true);
+    sndAtr.UsePhysObj(g_pBall->m_pPhysicsBall);
+    Audio::gStadGenSFX.Play(sndAtr);
+
+    pGoalie->SetNoPickUpTime(0.3f);
+}
+
 void Goalie::CollideWithBallCallback(cBall* pBall)
 {
+    PortReflectNoteSave(this, pBall);
     cPlayer::CollideWithBallCallback(pBall);
 
     if (mGoalieActionState != GOALIEACTION_STS || mpShooter == NULL)

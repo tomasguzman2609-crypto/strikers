@@ -73,6 +73,10 @@ extern "C" {
 //     that team's fielders landed a tackle or slide on an opponent in the 2s before it, the goal is
 //     disallowed (it doesn't count, and in sudden death the match goes on). Every review shows a
 //     verdict on screen. Should be labeled "Modo VAR" in the companion app.
+//   - PORT_CHALLENGE_REFLECTING_GOALIE (28) makes a CPU-only team's goalie fire back every shot it
+//     saves from a team with a real local player, the way a goalie swats back a failed Super Strike:
+//     hard, straight at the shooter, knocking down whoever it hits. Not when the shot leaves the
+//     goalie dazed. Should be labeled "Arquero Reflectante" in the companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -103,6 +107,7 @@ enum ePortChallenge
     PORT_CHALLENGE_PAPER_GOALIE = 25,            // a human team's goalie never catches, and every save leaves it dazed - "Arquero de Papel"
     PORT_CHALLENGE_CHOMP_REFEREE = 26,           // every 10 tackles/slides by a human team on the opponent send a Chain Chomp after it - "Chomp Árbitro"
     PORT_CHALLENGE_VAR = 27,                     // a human team's goal within 2s of its own tackle/slide on an opponent is disallowed - "Modo VAR"
+    PORT_CHALLENGE_REFLECTING_GOALIE = 28,       // a CPU goalie's saves of a human team's shots are swatted back at the shooter - "Arquero Reflectante"
 
     PORT_CHALLENGE_COUNT                         // one past the last valid ID
 };

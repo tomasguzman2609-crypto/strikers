@@ -230,6 +230,7 @@ extern "C" const char* PortModChallengeName(int challenge)
         "Arquero de Papel",
         "Chomp Árbitro",
         "Modo VAR",
+        "Arquero Reflectante",
     };
     if (challenge <= PORT_CHALLENGE_NONE || challenge >= PORT_CHALLENGE_COUNT)
         return "";
