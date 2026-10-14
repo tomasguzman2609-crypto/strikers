@@ -5,6 +5,7 @@
 #include "Game/Ball.h"
 #include "Game/Player.h"
 #include "Game/Team.h"
+#include "Game/JogoBonito.h"
 #include "port/achievements.h"
 #include "port/mod_challenge.h"
 
@@ -105,6 +106,9 @@ void PortAchievementHooksGoal(int nScoringSide, cPlayer* pScorer, bool bSuperStr
     const bool bByCaptain = bForUs && pScorer != NULL && pScorer == pOurs->GetCaptain();
     PortAchievementsGoal(bForUs ? 1 : 0, pOurs->m_nScore, pOurs->GetOtherTeam()->m_nScore, fGameSeconds,
                          bChip ? 1 : 0, (bForUs && bSuperStrike) ? 1 : 0, bByCaptain ? 1 : 0);
+    // "Jogo Bonito" counts the same goals.
+    if (bForUs)
+        PortJogoBonitoGoal(bChip);
 }
 
 void PortAchievementHooksTackle(cFielder* pVictim, cPlayer* pAttacker)
@@ -178,6 +182,7 @@ void PortAchievementHooksTick(float fGameSeconds)
 
 void PortAchievementHooksBallTaken(cPlayer* pTaker)
 {
+    PortJogoBonitoBallTaken(pTaker);
     const int ourSide = OurSide();
     if (ourSide < 0 || pTaker == NULL || pTaker->m_pTeam != g_pTeams[ourSide] || g_pBall == NULL)
         return;
@@ -189,6 +194,7 @@ void PortAchievementHooksBallTaken(cPlayer* pTaker)
 
 void PortAchievementHooksDekeBoost(cFielder* pFielder)
 {
+    PortJogoBonitoDeke(pFielder);
     if (IsOurs(pFielder))
         PortAchievementsDekeBoost();
 }

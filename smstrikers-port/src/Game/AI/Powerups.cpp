@@ -1,4 +1,5 @@
 #include "Game/AchievementHooks.h"
+#include "Game/JogoBonito.h"
 #include "Game/AI/Powerups.h"
 #include "port/mod_challenge.h"
 #include "Game/AI/Fielder.h"
@@ -1020,6 +1021,9 @@ static inline void ReleasePowerupModel(ePowerUpType type, DrawableObject* pDrawa
  */
 PowerupBase::~PowerupBase()
 {
+    // PORT: challenge roulette - a shell gone mid-graze doesn't count for "Jogo Bonito".
+    PortJogoBonitoShellGone(this);
+
     uintptr_t voiceID = m_uVoiceID;
 
     if (voiceID != 0)
@@ -2604,6 +2608,9 @@ void GreenShell::Update(float dt)
     m_pPhysicsObject->GetPosition(&m_v3Position);
     m_pPhysicsObject->GetLinearVelocity(&m_v3Velocity);
 
+    // PORT: challenge roulette - "Jogo Bonito" counts shells that graze past.
+    PortJogoBonitoShellTick(this);
+
     if (m_v3Position.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
     {
         m_v3Position.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
@@ -2688,6 +2695,9 @@ void RedShell::Update(float dt)
     m_v3PrevPosition = m_v3Position;
     m_pPhysicsObject->GetPosition(&m_v3Position);
     m_pPhysicsObject->GetLinearVelocity(&m_v3Velocity);
+
+    // PORT: challenge roulette - "Jogo Bonito" counts shells that graze past.
+    PortJogoBonitoShellTick(this);
 
     if (m_v3Position.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
     {
@@ -2927,6 +2937,9 @@ void SpinyShell::Update(float dt)
     m_pPhysicsObject->GetPosition(&m_v3Position);
     m_pPhysicsObject->GetLinearVelocity(&m_v3Velocity);
 
+    // PORT: challenge roulette - "Jogo Bonito" counts shells that graze past.
+    PortJogoBonitoShellTick(this);
+
     if (m_v3Position.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
     {
         m_v3Position.z = ((PhysicsSphere*)m_pPhysicsObject)->GetRadius();
@@ -3011,6 +3024,9 @@ void FreezeShell::Update(float fDeltaT)
     m_v3PrevPosition = m_v3Position;
     m_pPhysicsObject->GetPosition(&m_v3Position);
     m_pPhysicsObject->GetLinearVelocity(&m_v3Velocity);
+
+    // PORT: challenge roulette - "Jogo Bonito" counts shells that graze past.
+    PortJogoBonitoShellTick(this);
 
     if (m_v3Position.z < ((PhysicsSphere*)m_pPhysicsObject)->GetRadius())
     {

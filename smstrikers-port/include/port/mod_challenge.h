@@ -77,6 +77,10 @@ extern "C" {
 //     saves from a team with a real local player, the way a goalie swats back a failed Super Strike:
 //     hard, straight at the shooter, knocking down whoever it hits. Not when the shot leaves the
 //     goalie dazed. Should be labeled "Arquero Reflectante" in the companion app.
+//   - PORT_CHALLENGE_JOGO_BONITO (29) is a good one: stylish plays by a team with a real local player
+//     (chip-shot goals, dekes, interceptions, perfect passes, dodged shells) fill a meter to 5; once
+//     full, L+R together gives the whole team a 1.3s Star. Should be labeled "Jogo Bonito" in the
+//     companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -108,6 +112,7 @@ enum ePortChallenge
     PORT_CHALLENGE_CHOMP_REFEREE = 26,           // every 10 tackles/slides by a human team on the opponent send a Chain Chomp after it - "Chomp Árbitro"
     PORT_CHALLENGE_VAR = 27,                     // a human team's goal within 2s of its own tackle/slide on an opponent is disallowed - "Modo VAR"
     PORT_CHALLENGE_REFLECTING_GOALIE = 28,       // a CPU goalie's saves of a human team's shots are swatted back at the shooter - "Arquero Reflectante"
+    PORT_CHALLENGE_JOGO_BONITO = 29,             // stylish plays fill a meter; full, L+R gives the human team a 1.3s Star - "Jogo Bonito"
 
     PORT_CHALLENGE_COUNT                         // one past the last valid ID
 };

@@ -1877,6 +1877,7 @@ const ImVec4 kGold(1.0f, 0.83f, 0.23f, 1.0f);
 const ImVec4 kGreen(0.45f, 0.9f, 0.45f, 1.0f);
 const ImVec4 kGrey(0.65f, 0.65f, 0.65f, 1.0f);
 const ImVec4 kRed(0.95f, 0.25f, 0.2f, 1.0f);
+const ImVec4 kBlue(0.35f, 0.75f, 1.0f, 1.0f);
 const ImGuiWindowFlags kBannerFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
                                       ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
                                       ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
@@ -2076,8 +2077,9 @@ static void DrawChallengeBanner(void)
         s_varUntil = now + 3.0;
     }
 
-    // The active challenge's own counter (Chomp Árbitro's fouls): a red bar each time it goes up, and
-    // a warning once it is full.
+    // The active challenge's own counter: a bar each time it goes up - red for Chomp Árbitro's fouls,
+    // blue for Jogo Bonito's stylish plays - and a warning once Chomp Árbitro's is full. (Jogo
+    // Bonito's full meter gets a standing prompt below instead.)
     int meterProgress = 0, meterTarget = 0;
     PortModChallengeGetMeter(&meterProgress, &meterTarget);
     if (meterTarget > 0 && meterProgress > s_meterProgress)
@@ -2210,10 +2212,14 @@ static void DrawChallengeBanner(void)
                           s_achStates[i] == PORT_ACH_DONE ? kGreen : kGrey, text);
     }
 
-    if (now < s_meterUntil && meterTarget > 0)
+    const bool jogo = active == PORT_CHALLENGE_JOGO_BONITO;
+    if (jogo && meterTarget > 0 && meterProgress >= meterTarget)
+        DrawStackedNotice("##challenge_meter_ready", row++, now + 1.0, now, kBlue,
+                          "¡JOGO BONITO!  L + R = Estrella para todo el equipo");
+    else if (now < s_meterUntil && meterTarget > 0)
         DrawProgressNotice("##challenge_meter", row++, s_meterUntil, now, PortModChallengeName(active),
-                           meterProgress, meterTarget, kRed);
-    if (now < s_meterFullUntil)
+                           meterProgress, meterTarget, jogo ? kBlue : kRed);
+    if (now < s_meterFullUntil && !jogo)
         DrawStackedNotice("##challenge_meter_full", row++, s_meterFullUntil, now, kRed, "¡Falta! Ahí viene el Chomp");
 
     if (now < s_skipNoticeUntil)

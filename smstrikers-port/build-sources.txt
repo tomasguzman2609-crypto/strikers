@@ -267,6 +267,7 @@ Game/GameTweaks.cpp
 Game/Goalie.cpp
 Game/GoalieFatigue.cpp
 Game/InterpreterCore.cpp
+Game/JogoBonito.cpp
 Game/Loader/LoadingManager.cpp
 Game/MarioTriggers.cpp
 Game/Net.cpp
