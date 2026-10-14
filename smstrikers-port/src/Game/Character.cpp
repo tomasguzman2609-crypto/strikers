@@ -2300,12 +2300,13 @@ void cCharacter::UpdateMovementState(float fDeltaT)
 
         // PORT: challenge roulette - SLOW/FAST scale Player 1's own final desired speed, a local
         // variable here rather than a shared PlayerTweaks/GameTweaks entry, so no other fielder
-        // of the same character is affected.
+        // of the same character is affected. SLOW was half speed, which punished too much; 0.6x is
+        // that 20% better.
         if (pFielder->GetGlobalPad() != NULL)
         {
             int challenge = PortModChallengeGetActive();
             if (challenge == PORT_CHALLENGE_SLOW)
-                fDesiredSpeed *= 0.5f;
+                fDesiredSpeed *= 0.6f;
             else if (challenge == PORT_CHALLENGE_FAST)
             {
                 fDesiredSpeed *= 1.5f;

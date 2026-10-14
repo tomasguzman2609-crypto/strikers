@@ -160,6 +160,7 @@ Game/CharacterEffects.cpp
 Game/CharacterTemplate.cpp
 Game/CharacterTriggers.cpp
 Game/CharacterTweaks.cpp
+Game/ChompReferee.cpp
 Game/ComUpdateTask.cpp
 Game/Core/mtRandom.cpp
 Game/DB/CustomTournament.cpp

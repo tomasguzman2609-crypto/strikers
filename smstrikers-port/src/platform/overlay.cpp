@@ -1876,6 +1876,7 @@ namespace
 const ImVec4 kGold(1.0f, 0.83f, 0.23f, 1.0f);
 const ImVec4 kGreen(0.45f, 0.9f, 0.45f, 1.0f);
 const ImVec4 kGrey(0.65f, 0.65f, 0.65f, 1.0f);
+const ImVec4 kRed(0.95f, 0.25f, 0.2f, 1.0f);
 const ImGuiWindowFlags kBannerFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
                                       ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
                                       ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
@@ -1921,10 +1922,11 @@ void DrawStackedNotice(const char* id, int row, double until, double now, const 
     ImGui::PopStyleVar();
 }
 
-// A progress bar for a multi-step achievement, shown briefly above the bottom tag each time it
-// advances, then gone - so the match stays clear the rest of the time.
+// A progress bar for a multi-step achievement (gold) or a challenge's own counter (red), shown
+// briefly above the bottom tag each time it advances, then gone - so the match stays clear the rest
+// of the time.
 void DrawProgressNotice(const char* id, int row, double until, double now, const char* name, int progress,
-                        int target)
+                        int target, const ImVec4& colour = kGold)
 {
     if (now >= until || target <= 0)
         return;
@@ -1932,14 +1934,14 @@ void DrawProgressNotice(const char* id, int row, double until, double now, const
     const float scale = BannerScale();
     const float left = (float)(until - now);
     ImGui::PushStyleVar(ImGuiStyleVar_Alpha, left < 0.4f ? left / 0.4f : 1.0f);
-    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, kGold);
+    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, colour);
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y - (36.0f + 30.0f * (float)row) * scale),
                             ImGuiCond_Always, ImVec2(0.5f, 1.0f));
     ImGui::SetNextWindowBgAlpha(0.6f);
     if (ImGui::Begin(id, nullptr, kBannerFlags))
     {
         ImGui::SetWindowFontScale(1.3f * scale);
-        ImGui::TextColored(kGold, "%s", name);
+        ImGui::TextColored(colour, "%s", name);
         ImGui::SameLine(0.0f, 10.0f * scale);
         char count[32];
         std::snprintf(count, sizeof count, "%d/%d", progress, target);
@@ -2039,6 +2041,9 @@ static void DrawChallengeBanner(void)
     static double s_achProgressUntil[2] = { 0.0, 0.0 };
     static bool s_skipShown = false;
     static double s_skipNoticeUntil = 0.0;
+    static int s_meterProgress = 0;
+    static double s_meterUntil = 0.0;
+    static double s_meterFullUntil = 0.0;
 
     if (s_framesSinceMatch > 30)
     {
@@ -2056,7 +2061,21 @@ static void DrawChallengeBanner(void)
         s_achNames[0] = s_achNames[1] = nullptr;
         s_skipShown = PortAchievementsSkipAwarded() != 0;
         s_skipNoticeUntil = 0.0;
+        s_meterProgress = 0;
+        s_meterUntil = s_meterFullUntil = 0.0;
     }
+
+    // The active challenge's own counter (Chomp Árbitro's fouls): a red bar each time it goes up, and
+    // a warning once it is full.
+    int meterProgress = 0, meterTarget = 0;
+    PortModChallengeGetMeter(&meterProgress, &meterTarget);
+    if (meterTarget > 0 && meterProgress > s_meterProgress)
+    {
+        s_meterUntil = now + 1.5;
+        if (meterProgress >= meterTarget)
+            s_meterFullUntil = now + 2.5;
+    }
+    s_meterProgress = meterProgress;
 
     if (PortAchievementsSkipAwarded() && !s_skipShown)
     {
@@ -2179,6 +2198,12 @@ static void DrawChallengeBanner(void)
         DrawStackedNotice(i == 0 ? "##ach_notice0" : "##ach_notice1", row++, s_achNoticeUntil[i], now,
                           s_achStates[i] == PORT_ACH_DONE ? kGreen : kGrey, text);
     }
+
+    if (now < s_meterUntil && meterTarget > 0)
+        DrawProgressNotice("##challenge_meter", row++, s_meterUntil, now, PortModChallengeName(active),
+                           meterProgress, meterTarget, kRed);
+    if (now < s_meterFullUntil)
+        DrawStackedNotice("##challenge_meter_full", row++, s_meterFullUntil, now, kRed, "¡Falta! Ahí viene el Chomp");
 
     if (now < s_skipNoticeUntil)
         DrawStackedNotice("##ach_skip", row++, s_skipNoticeUntil, now, kGreen,

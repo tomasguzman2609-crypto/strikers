@@ -86,6 +86,9 @@ bool Compatible(int id, int challenge)
     case ACH_SUPER_GOAL:
         // Charging a Super Strike means holding the ball well past Papa Caliente's limit.
         return challenge != PORT_CHALLENGE_HOT_POTATO;
+    case ACH_TACKLES:
+        // Every 10th tackle on the opponent sends a Chain Chomp after us under Chomp Árbitro.
+        return challenge != PORT_CHALLENGE_CHOMP_REFEREE;
     case ACH_COMEBACK:
         // Being behind at all ends the match under Ventaja Oponente = Perdiste.
         return challenge != PORT_CHALLENGE_OPPONENT_LEAD_LOSES;

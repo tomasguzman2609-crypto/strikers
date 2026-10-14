@@ -4,6 +4,7 @@
 #include "Game/Team.h"
 #include "Game/AI/Fielder.h"
 #include "Game/AchievementHooks.h"
+#include "Game/ChompReferee.h"
 #include "Game/AI/SelfishCaptain.h"
 #include "Game/CharacterTriggers.h"
 #include "Game/AI/ShockFantasma.h"
@@ -469,6 +470,8 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
 
     // PORT: challenge roulette - "Shock Fantasma" eliminations last one match only.
     PortShockFantasmaReset();
+    // PORT: challenge roulette - "Chomp Árbitro" counts fouls per match.
+    PortChompRefereeReset();
     // PORT: challenge roulette - "Maldición Rotativa" draws a fresh challenge for each new match.
     PortModChallengeReroll();
     // PORT: challenge roulette - this match's two achievements, and tell the companion app a match
@@ -1400,6 +1403,9 @@ void cGame::Update(float deltaTime)
     // PORT: challenge roulette - "Estrella Intermitente" (see PortOpponentStarPulseUpdate above).
     PortOpponentStarPulseUpdate(deltaTime, PortModChallengeGetActive() == PORT_CHALLENGE_OPPONENT_STAR_PULSE
                                                && (m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME));
+
+    // PORT: challenge roulette - "Chomp Árbitro" (see Game/ChompReferee.h).
+    PortChompRefereeUpdate(m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME);
 
     // PORT: challenge roulette - "Papa Caliente" (see PortHotPotatoUpdate above).
     if (PortModChallengeGetActive() == PORT_CHALLENGE_HOT_POTATO

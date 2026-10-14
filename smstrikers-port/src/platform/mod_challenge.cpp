@@ -226,6 +226,9 @@ extern "C" const char* PortModChallengeName(int challenge)
         "Tackles Eléctricos",
         "Maldición Rotativa",
         "Estrella Intermitente",
+        "Esquive Estelar",
+        "Arquero de Papel",
+        "Chomp Árbitro",
     };
     if (challenge <= PORT_CHALLENGE_NONE || challenge >= PORT_CHALLENGE_COUNT)
         return "";
@@ -240,6 +243,21 @@ extern "C" void PortModChallengeNoteMatchFrame(void)
 extern "C" unsigned int PortModChallengeMatchFrameCount(void)
 {
     return g_matchFrames;
+}
+
+static int g_meterProgress = 0;
+static int g_meterTarget = 0;
+
+extern "C" void PortModChallengeSetMeter(int progress, int target)
+{
+    g_meterProgress = progress;
+    g_meterTarget = target;
+}
+
+extern "C" void PortModChallengeGetMeter(int* progress, int* target)
+{
+    *progress = g_meterProgress;
+    *target = g_meterTarget;
 }
 
 extern "C" void PortModChallengeSetActionFilter(PortModChallengeActionFilter filter)

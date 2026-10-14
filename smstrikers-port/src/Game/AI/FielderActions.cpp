@@ -3,6 +3,7 @@
 #include "port/mod_challenge.h"
 #include "Game/AI/ShockFantasma.h"
 #include "Game/AchievementHooks.h"
+#include "Game/ChompReferee.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -1240,6 +1241,8 @@ void cFielder::InitActionDeke(ePadActions padAction)
 /**
  * Offset/Address/Size: 0x74A8 | 0x8002DFE0 | size: 0x330
  */
+static bool PortTeamHasHumanPad(cTeam* pTeam); // PORT: defined with the "Tackles Eléctricos" helpers
+
 void cFielder::ActionDeke(float dt)
 {
     cGlobalPad* pGlobalPad = GetGlobalPad();
@@ -1358,11 +1361,29 @@ void cFielder::ActionDeke(float dt)
 
         if (mActionDekeVars.bPossibleTurboMove && mActionDekeVars.bPossibleSuccessfulDeke && !IsInvincible())
         {
-            m_ePowerup = (ePowerUpType)0x7;
-            mnNumPowerups = 1;
-            m_pPowerupTarget = nullptr;
-            ThrowPowerup();
-            m_tPowerupEffectTime.SetSeconds(0.5f);
+            // PORT: challenge roulette - "Esquive Estelar": on a team with a real local player the
+            // boost becomes a 1.5s Star, applied the way the Star powerup is (effect timer + EmitStar,
+            // expired by the fielder's own update through KillStar). A running Mushroom is cut short
+            // for it, as the Star would replace it anyway.
+            if (PortModChallengeGetActive() == PORT_CHALLENGE_DEKE_STAR && PortTeamHasHumanPad(m_pTeam)
+                && !g_pGame->mbCaptainShotToScoreOn)
+            {
+                if (m_ePowerup == POWER_UP_MUSHROOM && m_tPowerupEffectTime.m_uPackedTime != 0)
+                    KillMushroom(this);
+                m_ePowerup = POWER_UP_STAR;
+                mnNumPowerups = 1;
+                m_pPowerupTarget = nullptr;
+                m_tPowerupEffectTime.SetSeconds(1.5f);
+                EmitStar(this);
+            }
+            else
+            {
+                m_ePowerup = (ePowerUpType)0x7;
+                mnNumPowerups = 1;
+                m_pPowerupTarget = nullptr;
+                ThrowPowerup();
+                m_tPowerupEffectTime.SetSeconds(0.5f);
+            }
             // PORT: challenge roulette - the deke boost, for the "Esquive Turbo" achievement.
             PortAchievementHooksDekeBoost(this);
         }
@@ -1374,8 +1395,6 @@ void cFielder::ActionDeke(float dt)
 /**
  * Offset/Address/Size: 0x71BC | 0x8002DCF4 | size: 0x2EC
  */
-static bool PortTeamHasHumanPad(cTeam* pTeam); // PORT: defined with the "Tackles Eléctricos" helpers
-
 void cFielder::InitActionElectrocution(const nlVector3& wallPosition, const nlVector3& wallNormal)
 {
     InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
@@ -1683,6 +1702,8 @@ bool cFielder::InitActionHitReact(cPlayer* pAttacker, unsigned short desiredFaci
     // PORT: challenge roulette - achievements count tackles; read the victim's state (e.g. a shot
     // being charged) before anything below changes it.
     PortAchievementHooksTackle(this, pAttacker);
+    // PORT: challenge roulette - and so does "Chomp Árbitro".
+    PortChompRefereeTackle(this, pAttacker);
 
     CleanUpPowerupEffect();
 
@@ -4300,6 +4321,7 @@ void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
     if (!IsFallenDown(0.0f))
     {
         PortAchievementHooksTackle(this, pAttacker);
+        PortChompRefereeTackle(this, pAttacker);
     }
 
     CleanUpPowerupEffect();

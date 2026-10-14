@@ -60,6 +60,15 @@ extern "C" {
 //   - PORT_CHALLENGE_OPPONENT_STAR_PULSE (23) gives every fielder of a CPU-only team a 1s Star (the
 //     invincible, knock-everyone-over powerup) every 7s of play. Should be labeled "Estrella
 //     Intermitente" in the companion app. Maldición Rotativa can draw it like any other.
+//   - PORT_CHALLENGE_DEKE_STAR (24) is a good one: a successful deke by a fielder of a team with a
+//     real local player gives a 1.5s Star instead of the usual short speed boost. Should be labeled
+//     "Esquive Estelar" in the companion app.
+//   - PORT_CHALLENGE_PAPER_GOALIE (25) makes the goalie of a team with a real local player behave as
+//     under the "stunned goalies" cheat: it never catches a shot, and every shot it saves leaves it
+//     dazed. Should be labeled "Arquero de Papel" in the companion app.
+//   - PORT_CHALLENGE_CHOMP_REFEREE (26) counts the tackles and slides a team with a real local
+//     player lands on its opponent; every 10th sends a Chain Chomp after that team. Should be
+//     labeled "Chomp Árbitro" in the companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -67,7 +76,7 @@ enum ePortChallenge
     PORT_CHALLENGE_INVERTED_CONTROLS = 2,   // every real player's left stick is negated on both axes
     PORT_CHALLENGE_NO_POWERUPS = 3,         // every real player's team never has a powerup
     PORT_CHALLENGE_INFINITE_POWERUPS = 4,   // every real player's team always has one ready (re-rolled the instant it's used)
-    PORT_CHALLENGE_SLOW = 5,                // every real player moves at half speed
+    PORT_CHALLENGE_SLOW = 5,                // every real player moves at 0.6x speed
     PORT_CHALLENGE_FAST = 6,                // every real player moves at 1.5x speed
     PORT_CHALLENGE_NO_PASSES = 7,           // every real player can't cross/lob a pass (normal grounded passes still work)
     PORT_CHALLENGE_NO_TACKLES = 8,          // every real player's slide (ACTION_SLIDE_ATTACK) is blocked - "Barrida Nerfeada"
@@ -86,6 +95,9 @@ enum ePortChallenge
     PORT_CHALLENGE_ELECTRIC_TACKLES = 21,        // a CPU team's hit or slide on a human team's fielder electrocutes them like the fence - "Tackles Eléctricos"
     PORT_CHALLENGE_ROTATING_CURSE = 22,          // meta: a random other challenge, re-drawn at kickoff and after every goal - "Maldición Rotativa"
     PORT_CHALLENGE_OPPONENT_STAR_PULSE = 23,     // every CPU-only team fielder gets a 1s Star every 7s - "Estrella Intermitente"
+    PORT_CHALLENGE_DEKE_STAR = 24,               // a human team's successful deke gives a 1.5s Star instead of the speed boost - "Esquive Estelar"
+    PORT_CHALLENGE_PAPER_GOALIE = 25,            // a human team's goalie never catches, and every save leaves it dazed - "Arquero de Papel"
+    PORT_CHALLENGE_CHOMP_REFEREE = 26,           // every 10 tackles/slides by a human team on the opponent send a Chain Chomp after it - "Chomp Árbitro"
 
     PORT_CHALLENGE_COUNT                         // one past the last valid ID
 };
@@ -128,6 +140,12 @@ void PortModChallengeSetMatchPlaying(int playing);
 // banner (overlay.cpp) can tell a match apart from menus and loading screens.
 void PortModChallengeNoteMatchFrame(void);
 unsigned int PortModChallengeMatchFrameCount(void);
+
+// A challenge's own on-screen counter, for the overlay (e.g. Chomp Árbitro's fouls toward the next
+// Chain Chomp): progress out of target, target 0 when the active challenge has none. The game sets
+// it; the overlay shows a red bar each time progress goes up.
+void PortModChallengeSetMeter(int progress, int target);
+void PortModChallengeGetMeter(int* progress, int* target);
 
 // Optional veto on a pad action, for challenges that depend on game state the input layer can't see
 // (e.g. which fielder a pad currently controls). The game registers one at startup; the platform pad

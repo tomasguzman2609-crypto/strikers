@@ -1,4 +1,5 @@
 #include "Game/Goalie.h"
+#include "port/mod_challenge.h"
 #include "Game/AI/GoalieLooseBall.h"
 #include "Game/AI/AiUtil.h"
 #include "Game/Ball.h"
@@ -201,6 +202,33 @@ static inline float ScaleGoalieDeflectRandom(float scale, float randomValue)
 /**
  * Offset/Address/Size: 0xA86C | 0x8004D368 | size: 0xD2C
  */
+// PORT: challenge roulette - "Arquero de Papel" (PORT_CHALLENGE_PAPER_GOALIE): the goalie of a team
+// with a real local player behaves as under the "stunned goalies" cheat - it never catches a shot
+// (FindBestSave leaves out the catch saves) and every save leaves it dazed.
+static bool PortGoalieStunned(const Goalie* pGoalie)
+{
+    if (GameInfoManager::GetInstance()->IsStunnedGoaliesOn())
+        return true;
+    if (PortModChallengeGetActive() != PORT_CHALLENGE_PAPER_GOALIE || pGoalie->m_pTeam == NULL)
+        return false;
+    for (int i = 0; i < 5; i++)
+    {
+        cPlayer* pPlayer = pGoalie->m_pTeam->GetPlayer(i);
+        if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL)
+            return true;
+    }
+    return false;
+}
+
+static SaveData* PortFindBestSave(const Goalie* pGoalie, SaveBlendInfo& blendInfo, const nlVector3& v3LocalPos,
+                                  float fTime, bool bDoNearSearch, unsigned int uSaveType, bool bFromTakeoff)
+{
+    gPortSaveAsStunnedGoalie = PortGoalieStunned(pGoalie);
+    SaveData* pSaveData = GoalieSave::FindBestSave(blendInfo, v3LocalPos, fTime, bDoNearSearch, uSaveType, bFromTakeoff);
+    gPortSaveAsStunnedGoalie = false;
+    return pSaveData;
+}
+
 void Goalie::CollideWithBallCallback(cBall* pBall)
 {
     cPlayer::CollideWithBallCallback(pBall);
@@ -504,7 +532,8 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
                     break;
 
                 cPlayer* pScorer = g_pGame->m_pScorer;
-                bool bStunnedOn = GameInfoManager::GetInstance()->IsStunnedGoaliesOn();
+                // PORT: challenge roulette - "Arquero de Papel" stuns on every save, like the cheat.
+                bool bStunnedOn = PortGoalieStunned(this);
 
                 if (!bStunnedOn)
                 {
@@ -3693,7 +3722,7 @@ void Goalie::InitActionLooseBallCatch()
 
     mv3LocalContactPosition.x = 0.2f;
 
-    mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, mfTargetTime, false, 1, true);
+    mpSaveData = PortFindBestSave(this, mBlendInfo, mv3LocalContactPosition, mfTargetTime, false, 1, true);
 
     mpLooseBallInfo = NULL;
     mMoveDirection = GOALIEDIR_IDLE;
@@ -5200,7 +5229,7 @@ unsigned short Goalie::CalcBestSave(float fTime, const nlVector3& rTargetPos, co
         return m_aDesiredFacingDirection;
     }
 
-    mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, fTime, bParam, uSaveType, false);
+    mpSaveData = PortFindBestSave(this, mBlendInfo, mv3LocalContactPosition, fTime, bParam, uSaveType, false);
 
     if (mpSaveData != NULL)
     {
@@ -5224,7 +5253,7 @@ float Goalie::CalcSaveParameters(float fTimeToContact, unsigned int uSaveType, b
     }
     else
     {
-        mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, fTime, false, uSaveType, bFromTakeoff);
+        mpSaveData = PortFindBestSave(this, mBlendInfo, mv3LocalContactPosition, fTime, false, uSaveType, bFromTakeoff);
     }
 
     if (mpSaveData != NULL)
@@ -5238,7 +5267,7 @@ float Goalie::CalcSaveParameters(float fTimeToContact, unsigned int uSaveType, b
             return -1.0f;
         }
 
-        mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, 5.0f, true, uSaveType & 0xFFFC, false);
+        mpSaveData = PortFindBestSave(this, mBlendInfo, mv3LocalContactPosition, 5.0f, true, uSaveType & 0xFFFC, false);
         mbPlayMiss = true;
     }
 
@@ -5368,7 +5397,7 @@ bool Goalie::CanInterceptPass()
 
             GetLocalPoint(mv3LocalContactPosition, mv3TargetPosition, m_v3Position, saveAngle);
 
-            mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, mfTimeTilSave, false, uSaveType, false);
+            mpSaveData = PortFindBestSave(this, mBlendInfo, mv3LocalContactPosition, mfTimeTilSave, false, uSaveType, false);
 
             if (mpSaveData != NULL)
             {
@@ -5429,7 +5458,7 @@ bool Goalie::CanInterceptPass()
 
                 GetLocalPoint(mv3LocalContactPosition, mv3TargetPosition, m_v3Position, saveAngle);
 
-                mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, mfTimeTilSave, false, uSaveType, false);
+                mpSaveData = PortFindBestSave(this, mBlendInfo, mv3LocalContactPosition, mfTimeTilSave, false, uSaveType, false);
 
                 if (mpSaveData != NULL)
                 {

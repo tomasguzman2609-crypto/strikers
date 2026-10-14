@@ -59,6 +59,10 @@ public:
     /* 0x84 */ class nlVector3 mv3BlendedSavePos;
 }; // total size: 0x90
 
+// PORT: challenge roulette - "Arquero de Papel": set by Goalie around its FindBestSave calls when
+// that goalie should save as under the "stunned goalies" cheat (no catches, only deflections).
+extern bool gPortSaveAsStunnedGoalie;
+
 class GoalieSave
 {
     static void FindVerticalBoundingPoints(SaveData* pSaveData, const nlVector3& v3TargetPoint, SaveData** pLoPoint, SaveData** pHiPoint);

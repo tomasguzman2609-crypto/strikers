@@ -413,6 +413,8 @@ void GoalieSave::InitData(Goalie* pGoalie)
     mbInitialized = 1;
 }
 
+bool gPortSaveAsStunnedGoalie = false;
+
 template <typename T>
 class nlSingleton
 {
@@ -550,7 +552,7 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
     else if (j >= 5)
         j = 4;
 
-    if (nlSingleton<GameInfoManager>::s_pInstance->IsStunnedGoaliesOn())
+    if (nlSingleton<GameInfoManager>::s_pInstance->IsStunnedGoaliesOn() || gPortSaveAsStunnedGoalie)
         uSaveType &= ~3;
 
     pSaveData = GoalieSave::FindBestInList(
