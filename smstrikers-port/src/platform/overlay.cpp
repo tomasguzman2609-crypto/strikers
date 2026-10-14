@@ -2044,6 +2044,8 @@ static void DrawChallengeBanner(void)
     static int s_meterProgress = 0;
     static double s_meterUntil = 0.0;
     static double s_meterFullUntil = 0.0;
+    static unsigned int s_varReviews = 0;
+    static double s_varUntil = 0.0;
 
     if (s_framesSinceMatch > 30)
     {
@@ -2063,6 +2065,15 @@ static void DrawChallengeBanner(void)
         s_skipNoticeUntil = 0.0;
         s_meterProgress = 0;
         s_meterUntil = s_meterFullUntil = 0.0;
+        s_varReviews = PortModChallengeVarReviewCount();
+        s_varUntil = 0.0;
+    }
+
+    // Modo VAR: a popup with the verdict on each goal it reviews.
+    if (PortModChallengeVarReviewCount() != s_varReviews)
+    {
+        s_varReviews = PortModChallengeVarReviewCount();
+        s_varUntil = now + 3.0;
     }
 
     // The active challenge's own counter (Chomp Árbitro's fouls): a red bar each time it goes up, and
@@ -2129,7 +2140,7 @@ static void DrawChallengeBanner(void)
         s_curseNoticeUntil = (rotating && active != PORT_CHALLENGE_NONE) ? now + 1.0 : 0.0;
     }
 
-    if (active == PORT_CHALLENGE_NONE && achCount == 0)
+    if (active == PORT_CHALLENGE_NONE && achCount == 0 && now >= s_varUntil)
         return;
 
     const ImGuiIO& io = ImGui::GetIO();
@@ -2208,6 +2219,31 @@ static void DrawChallengeBanner(void)
     if (now < s_skipNoticeUntil)
         DrawStackedNotice("##ach_skip", row++, s_skipNoticeUntil, now, kGreen,
                           "¡Logros completos! +1 skip de ruleta");
+
+    // Modo VAR's verdict, in the upper middle of the screen, over the goal celebration.
+    if (now < s_varUntil)
+    {
+        const bool disallowed = PortModChallengeVarLastDisallowed() != 0;
+        const float left = (float)(s_varUntil - now);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, left < 0.4f ? left / 0.4f : 1.0f);
+        ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.22f), ImGuiCond_Always,
+                                ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowBgAlpha(0.8f);
+        if (ImGui::Begin("##var_verdict", nullptr, kBannerFlags))
+        {
+            ImGui::SetWindowFontScale(2.0f * scale);
+            ImGui::TextUnformatted("REVISIÓN VAR");
+            ImGui::SetWindowFontScale(3.0f * scale);
+            if (disallowed)
+                ImGui::TextColored(kRed, "VAR: GOL ANULADO");
+            else
+                ImGui::TextColored(kGreen, "VAR: GOL");
+            ImGui::SetWindowFontScale(1.5f * scale);
+            ImGui::TextUnformatted(disallowed ? "Falta (tackle o barrida) antes del gol" : "Jugada limpia");
+        }
+        ImGui::End();
+        ImGui::PopStyleVar();
+    }
 
     // "Maldición Rotativa" only: one second in the middle of the screen for each new draw.
     if (now < s_curseNoticeUntil)

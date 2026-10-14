@@ -229,6 +229,7 @@ extern "C" const char* PortModChallengeName(int challenge)
         "Esquive Estelar",
         "Arquero de Papel",
         "Chomp Árbitro",
+        "Modo VAR",
     };
     if (challenge <= PORT_CHALLENGE_NONE || challenge >= PORT_CHALLENGE_COUNT)
         return "";
@@ -258,6 +259,25 @@ extern "C" void PortModChallengeGetMeter(int* progress, int* target)
 {
     *progress = g_meterProgress;
     *target = g_meterTarget;
+}
+
+static unsigned int g_varReviews = 0;
+static int g_varLastDisallowed = 0;
+
+extern "C" void PortModChallengeVarVerdict(int disallowed)
+{
+    g_varLastDisallowed = disallowed;
+    g_varReviews++;
+}
+
+extern "C" unsigned int PortModChallengeVarReviewCount(void)
+{
+    return g_varReviews;
+}
+
+extern "C" int PortModChallengeVarLastDisallowed(void)
+{
+    return g_varLastDisallowed;
 }
 
 extern "C" void PortModChallengeSetActionFilter(PortModChallengeActionFilter filter)

@@ -5,6 +5,7 @@
 #include "Game/AI/Fielder.h"
 #include "Game/AchievementHooks.h"
 #include "Game/ChompReferee.h"
+#include "Game/VarReview.h"
 #include "Game/AI/SelfishCaptain.h"
 #include "Game/CharacterTriggers.h"
 #include "Game/AI/ShockFantasma.h"
@@ -472,6 +473,8 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
     PortShockFantasmaReset();
     // PORT: challenge roulette - "Chomp Árbitro" counts fouls per match.
     PortChompRefereeReset();
+    // PORT: challenge roulette - "Modo VAR" forgets the last match's fouls.
+    PortVarReset();
     // PORT: challenge roulette - "Maldición Rotativa" draws a fresh challenge for each new match.
     PortModChallengeReroll();
     // PORT: challenge roulette - this match's two achievements, and tell the companion app a match
@@ -563,7 +566,14 @@ void cGame::CheckForGoal()
             nSide %= 2;
             m_nLastTeamToScore = nSide;
 
-            if (m_eGameState == GS_OVERTIME)
+            // PORT: challenge roulette - "Modo VAR": a human team's goal within 2s of its own tackle
+            // or slide on an opponent is disallowed. The goal plays out as usual (the other team
+            // kicks off, as after any goal) but adds nothing to the score, and in sudden death it
+            // doesn't end the match: GS_POST_GOAL instead, after which the clock check in Update puts
+            // the match straight back into overtime.
+            const bool bVarDisallowed = PortVarReviewGoal(nSide, GetGameTime());
+
+            if (m_eGameState == GS_OVERTIME && !bVarDisallowed)
             {
                 if (m_eGameState != GS_END_GAME)
                 {
@@ -631,11 +641,19 @@ void cGame::CheckForGoal()
                 uNumGoalsScored *= 2;
             }
 
+            if (bVarDisallowed)
+            {
+                uNumGoalsScored = 0;
+            }
+
             g_pTeams[nSide]->m_nScore += uNumGoalsScored;
 
-            // PORT: challenge roulette - achievements. m_uGoalType is still 6 for a Super Strike here
-            // (it is overwritten below).
-            PortAchievementHooksGoal(nSide, m_pScorer, g_pBall->m_uGoalType == 6, GetGameTime());
+            // PORT: challenge roulette - achievements (a disallowed goal counts for none). m_uGoalType
+            // is still 6 for a Super Strike here (it is overwritten below).
+            if (!bVarDisallowed)
+            {
+                PortAchievementHooksGoal(nSide, m_pScorer, g_pBall->m_uGoalType == 6, GetGameTime());
+            }
 
             // PORT: challenge roulette - "Ventaja Oponente = Perdiste": a CPU-only team going ahead
             // of a human team ends the match right here, exactly like a goal in sudden-death

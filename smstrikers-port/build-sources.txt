@@ -519,6 +519,7 @@ Game/Triggers/SebringAnimScript.cpp
 Game/TrophyInfo.cpp
 Game/TweakerTask.cpp
 Game/TweaksBase.cpp
+Game/VarReview.cpp
 Game/World/WorldLoader.cpp
 Game/World/worldanim.cpp
 Game/WorldManager.cpp

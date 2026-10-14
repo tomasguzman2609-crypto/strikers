@@ -69,6 +69,10 @@ extern "C" {
 //   - PORT_CHALLENGE_CHOMP_REFEREE (26) counts the tackles and slides a team with a real local
 //     player lands on its opponent; every 10th sends a Chain Chomp after that team. Should be
 //     labeled "Chomp Árbitro" in the companion app.
+//   - PORT_CHALLENGE_VAR (27) reviews every goal a team with a real local player scores: if one of
+//     that team's fielders landed a tackle or slide on an opponent in the 2s before it, the goal is
+//     disallowed (it doesn't count, and in sudden death the match goes on). Every review shows a
+//     verdict on screen. Should be labeled "Modo VAR" in the companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -98,6 +102,7 @@ enum ePortChallenge
     PORT_CHALLENGE_DEKE_STAR = 24,               // a human team's successful deke gives a 1.5s Star instead of the speed boost - "Esquive Estelar"
     PORT_CHALLENGE_PAPER_GOALIE = 25,            // a human team's goalie never catches, and every save leaves it dazed - "Arquero de Papel"
     PORT_CHALLENGE_CHOMP_REFEREE = 26,           // every 10 tackles/slides by a human team on the opponent send a Chain Chomp after it - "Chomp Árbitro"
+    PORT_CHALLENGE_VAR = 27,                     // a human team's goal within 2s of its own tackle/slide on an opponent is disallowed - "Modo VAR"
 
     PORT_CHALLENGE_COUNT                         // one past the last valid ID
 };
@@ -146,6 +151,12 @@ unsigned int PortModChallengeMatchFrameCount(void);
 // it; the overlay shows a red bar each time progress goes up.
 void PortModChallengeSetMeter(int progress, int target);
 void PortModChallengeGetMeter(int* progress, int* target);
+
+// Modo VAR's verdict on a goal, for the overlay's popup: the game reports each review, and the
+// overlay shows the latest one whenever the review count goes up.
+void PortModChallengeVarVerdict(int disallowed);
+unsigned int PortModChallengeVarReviewCount(void);
+int PortModChallengeVarLastDisallowed(void);
 
 // Optional veto on a pad action, for challenges that depend on game state the input layer can't see
 // (e.g. which fielder a pad currently controls). The game registers one at startup; the platform pad

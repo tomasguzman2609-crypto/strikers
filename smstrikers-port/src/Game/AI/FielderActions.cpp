@@ -4,6 +4,7 @@
 #include "Game/AI/ShockFantasma.h"
 #include "Game/AchievementHooks.h"
 #include "Game/ChompReferee.h"
+#include "Game/VarReview.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -1702,8 +1703,9 @@ bool cFielder::InitActionHitReact(cPlayer* pAttacker, unsigned short desiredFaci
     // PORT: challenge roulette - achievements count tackles; read the victim's state (e.g. a shot
     // being charged) before anything below changes it.
     PortAchievementHooksTackle(this, pAttacker);
-    // PORT: challenge roulette - and so does "Chomp Árbitro".
+    // PORT: challenge roulette - and so do "Chomp Árbitro" and "Modo VAR".
     PortChompRefereeTackle(this, pAttacker);
+    PortVarTackle(this, pAttacker);
 
     CleanUpPowerupEffect();
 
@@ -4322,6 +4324,7 @@ void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
     {
         PortAchievementHooksTackle(this, pAttacker);
         PortChompRefereeTackle(this, pAttacker);
+        PortVarTackle(this, pAttacker);
     }
 
     CleanUpPowerupEffect();
