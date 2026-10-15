@@ -144,6 +144,7 @@ Goalie::~Goalie()
 }
 
 static void PortReflectUpdate(Goalie* pGoalie, float dt); // PORT: "Arquero Reflectante", defined below
+static void PortPaperGoalieUpdate(Goalie* pGoalie);       // PORT: "Arquero de Papel", defined below
 
 /**
  * Offset/Address/Size: 0xB598 | 0x8004E094 | size: 0x17C
@@ -178,8 +179,10 @@ void Goalie::Update(float dt)
     mFatigue.Update(dt);
     cCharacter::Update(dt);
 
-    // PORT: challenge roulette - "Arquero Reflectante" (see PortReflectUpdate).
+    // PORT: challenge roulette - "Arquero Reflectante" (see PortReflectUpdate) and "Arquero de Papel"
+    // (see PortPaperGoalieUpdate).
     PortReflectUpdate(this, dt);
+    PortPaperGoalieUpdate(this);
 
     if (!mbIsPosed)
     {
@@ -223,6 +226,64 @@ static bool PortGoalieStunned(const Goalie* pGoalie)
             return true;
     }
     return false;
+}
+
+// PORT: challenge roulette - "Arquero de Papel" also dazes the goalie on *any* touch of a ball the
+// other team played (a shot, a pass, a loose ball it goes to pick up), not just on the saves the
+// cheat dazes on. The contact is noted in CollideWithBallCallback and the daze applied from
+// Goalie::Update, after the contact has been handled: a caught ball is dropped, then the goalie goes
+// into the same dazed state (STS_RECOVER + EmitDaze) the cheat uses.
+static Goalie* s_pPaperGoalie = NULL;
+
+static void PortPaperGoalieNoteContact(Goalie* pGoalie, cBall* pBall)
+{
+    if (PortModChallengeGetActive() != PORT_CHALLENGE_PAPER_GOALIE || !PortGoalieStunned(pGoalie))
+        return;
+    if (pGoalie->mGoalieActionState == GOALIEACTION_STS_RECOVER || pGoalie->mGoalieActionState == GOALIEACTION_STS)
+        return; // already dazed, or a Super Strike (which has its own outcome)
+    if (pBall->m_pOwner == pGoalie)
+        return;
+    cPlayer* pLast = pBall->m_pLastTouch;
+    const bool bTheirs = pLast != NULL && pLast != pGoalie && pLast->m_pTeam != pGoalie->m_pTeam;
+    if (!bTheirs && pBall->m_tShotTimer.m_uPackedTime == 0)
+        return; // a back pass or our own loose ball
+    s_pPaperGoalie = pGoalie;
+}
+
+static void PortPaperGoalieUpdate(Goalie* pGoalie)
+{
+    if (s_pPaperGoalie != pGoalie)
+        return;
+    s_pPaperGoalie = NULL;
+    if (!g_pGame->IsGameplayOrOvertime() || pGoalie->mGoalieActionState == GOALIEACTION_STS_RECOVER)
+        return;
+
+    if (pGoalie->m_pBall != NULL)
+    {
+        // Fumble it: drop the ball and let it pop forward, out of the goalie's hands.
+        pGoalie->ReleaseBall();
+        nlVector3 v3Pop;
+        nlVec3Set(v3Pop, 3.0f * pGoalie->m_m4WorldMatrix.e2[0][0], 3.0f * pGoalie->m_m4WorldMatrix.e2[0][1], 3.0f);
+        g_pBall->SetVelocity(v3Pop, SPINTYPE_FORWARD, NULL);
+        g_pBall->m_tNoPickupTimer.SetSeconds(0.3f);
+    }
+
+    // The same daze the "stunned goalies" cheat gives on a save.
+    pGoalie->mbDoHeadTrack = false;
+    pGoalie->CleanGoalieAction();
+    pGoalie->mPrevGoalieActionState = pGoalie->mGoalieActionState;
+    pGoalie->mGoalieActionState = GOALIEACTION_STS_RECOVER;
+    pGoalie->mnSubstate = 0;
+    pGoalie->SetAnimState(0x6F, true, 0.2f, false, false);
+    GoalieTweaks* pTweaks = (GoalieTweaks*)pGoalie->m_pTweaks;
+    pGoalie->mfWaitTime = pTweaks->fGoalieStunTimeMin;
+    float fRange = pTweaks->fGoalieStunTimeMax - pGoalie->mfWaitTime;
+    if (fRange > 0.0f)
+        pGoalie->mfWaitTime += nlRandomf(fRange, &nlDefaultSeed);
+    pGoalie->InitMovementFromAnim(0, v3Zero, 1.0f, false);
+    EmitDaze(pGoalie);
+    pGoalie->mbStunEffectActive = true;
+    pGoalie->SetNoPickUpTime(0.5f);
 }
 
 static SaveData* PortFindBestSave(const Goalie* pGoalie, SaveBlendInfo& blendInfo, const nlVector3& v3LocalPos,
@@ -332,6 +393,7 @@ static void PortReflectUpdate(Goalie* pGoalie, float dt)
 void Goalie::CollideWithBallCallback(cBall* pBall)
 {
     PortReflectNoteSave(this, pBall);
+    PortPaperGoalieNoteContact(this, pBall);
     cPlayer::CollideWithBallCallback(pBall);
 
     if (mGoalieActionState != GOALIEACTION_STS || mpShooter == NULL)
