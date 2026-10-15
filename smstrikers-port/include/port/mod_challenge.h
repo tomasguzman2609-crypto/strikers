@@ -81,6 +81,10 @@ extern "C" {
 //     (chip-shot goals, dekes, interceptions, perfect passes, dodged shells) fill a meter to 5; once
 //     full, L+R together gives the whole team a 1.3s Star. Should be labeled "Jogo Bonito" in the
 //     companion app.
+//   - PORT_CHALLENGE_REINFORCEMENTS (30) starts a team with a real local player with only its
+//     captain on the pitch; the other fielders run on 10s, 25s and 45s into play, each with a
+//     Mushroom. While down to one fielder, that pad can't pass. Should be labeled "Refuerzos" in the
+//     companion app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -113,6 +117,7 @@ enum ePortChallenge
     PORT_CHALLENGE_VAR = 27,                     // a human team's goal within 2s of its own tackle/slide on an opponent is disallowed - "Modo VAR"
     PORT_CHALLENGE_REFLECTING_GOALIE = 28,       // a CPU goalie's saves of a human team's shots are swatted back at the shooter - "Arquero Reflectante"
     PORT_CHALLENGE_JOGO_BONITO = 29,             // stylish plays fill a meter; full, L+R gives the human team a 1.3s Star - "Jogo Bonito"
+    PORT_CHALLENGE_REINFORCEMENTS = 30,          // a human team starts with its captain alone; teammates come on at 10s, 25s and 45s - "Refuerzos"
 
     PORT_CHALLENGE_COUNT                         // one past the last valid ID
 };

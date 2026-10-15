@@ -31,7 +31,13 @@ void PortShockFantasmaOnStunEnd(cFielder* pFielder);
 // without the pad.
 void PortShockFantasmaUpdate();
 
-// From cGame::BeginGame: forgets every elimination and turns the fielders' collision back on (a
+// PORT: challenge roulette - "Refuerzos" benches fielders the same way: a benched fielder is parked
+// and skipped exactly like an eliminated one (PortShockFantasmaIsEliminated is true for it) until
+// it is unbenched. Unbenching turns its collisions back on; the caller puts it back on the pitch.
+void PortShockFantasmaSetBenched(int side, int index, bool bBenched);
+bool PortShockFantasmaIsBenched(int side, int index);
+
+// From cGame::BeginGame: forgets every elimination and bench and turns the fielders' collision back on (a
 // rematch reuses the same cTeam objects). The kickoff reset then puts them back on the pitch.
 void PortShockFantasmaReset();
 

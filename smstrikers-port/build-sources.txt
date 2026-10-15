@@ -312,6 +312,7 @@ Game/PoseAccumulator.cpp
 Game/PoseNode.cpp
 Game/ProfileTask.cpp
 Game/RayCollider.cpp
+Game/Reinforcements.cpp
 Game/Render/AnimatedModelExplodable.cpp
 Game/Render/Bowser.cpp
 Game/Render/CameraGuy.cpp

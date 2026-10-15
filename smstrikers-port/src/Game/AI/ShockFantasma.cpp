@@ -18,6 +18,13 @@ namespace
 // quit before GS_END_GAME can't leave a dangling pointer that a later match's fielder reuses.
 bool sEliminated[2][4];
 bool sPending[2][4];
+// "Refuerzos": fielders waiting on the bench, parked like eliminated ones.
+bool sBenched[2][4];
+
+bool IsOut(int side, int index)
+{
+    return sEliminated[side][index] || sBenched[side][index];
+}
 
 // PORT DEBUG: set STRIKERS_DEBUG_CHALLENGE=1 (same switch as the other challenge hooks) to trace
 // each step, e.g. to tell "the hook never ran" from "it ran but declined".
@@ -74,7 +81,7 @@ bool CanEliminate(int side)
     int nActive = 0;
     for (int i = 0; i < 4; i++)
     {
-        if (!sEliminated[side][i])
+        if (!IsOut(side, i))
             nActive++;
     }
 
@@ -95,7 +102,7 @@ void HandOffPad(int side, cFielder* pFielder)
     for (int i = 0; i < 4; i++)
     {
         cFielder* pCandidate = pTeam->GetFielder(i);
-        if (pCandidate == pFielder || sEliminated[side][i] || pCandidate->m_pController != NULL)
+        if (pCandidate == pFielder || IsOut(side, i) || pCandidate->m_pController != NULL)
             continue;
 
         float dx = pCandidate->m_v3Position.x - g_pBall->m_v3Position.x;
@@ -120,7 +127,29 @@ void HandOffPad(int side, cFielder* pFielder)
 bool PortShockFantasmaIsEliminated(const cCharacter* pCharacter)
 {
     int side, index;
-    return Locate(pCharacter, side, index) && sEliminated[side][index];
+    return Locate(pCharacter, side, index) && IsOut(side, index);
+}
+
+void PortShockFantasmaSetBenched(int side, int index, bool bBenched)
+{
+    if (side < 0 || side > 1 || index < 0 || index > 3 || sBenched[side][index] == bBenched)
+        return;
+    sBenched[side][index] = bBenched;
+    if (bBenched)
+    {
+        PortShockFantasmaUpdate(); // park it right away
+    }
+    else if (g_pTeams[side] != NULL && !sEliminated[side][index])
+    {
+        cFielder* pFielder = g_pTeams[side]->GetFielder(index);
+        pFielder->m_pPhysicsCharacter->m_CanCollideWithBall = true;
+        pFielder->m_pPhysicsCharacter->m_CanCollideWithWall = true;
+    }
+}
+
+bool PortShockFantasmaIsBenched(int side, int index)
+{
+    return side >= 0 && side < 2 && index >= 0 && index < 4 && sBenched[side][index];
 }
 
 void PortShockFantasmaOnElectrocuted(cFielder* pFielder)
@@ -178,7 +207,7 @@ void PortShockFantasmaUpdate()
 
         for (int index = 0; index < 4; index++)
         {
-            if (!sEliminated[side][index])
+            if (!IsOut(side, index))
                 continue;
 
             cFielder* pFielder = pTeam->GetFielder(index);
@@ -218,7 +247,7 @@ void PortShockFantasmaReset()
     {
         for (int index = 0; index < 4; index++)
         {
-            if (sEliminated[side][index] && g_pTeams[side] != NULL)
+            if (IsOut(side, index) && g_pTeams[side] != NULL)
             {
                 cFielder* pFielder = g_pTeams[side]->GetFielder(index);
                 pFielder->m_pPhysicsCharacter->m_CanCollideWithBall = true;
@@ -226,6 +255,7 @@ void PortShockFantasmaReset()
             }
             sEliminated[side][index] = false;
             sPending[side][index] = false;
+            sBenched[side][index] = false;
         }
     }
 }

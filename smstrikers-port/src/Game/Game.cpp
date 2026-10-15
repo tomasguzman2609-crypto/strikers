@@ -7,6 +7,7 @@
 #include "Game/ChompReferee.h"
 #include "Game/VarReview.h"
 #include "Game/JogoBonito.h"
+#include "Game/Reinforcements.h"
 #include "Game/AI/SelfishCaptain.h"
 #include "Game/CharacterTriggers.h"
 #include "Game/AI/ShockFantasma.h"
@@ -478,6 +479,8 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
     PortVarReset();
     // PORT: challenge roulette - "Jogo Bonito" starts every match with an empty meter.
     PortJogoBonitoReset();
+    // PORT: challenge roulette - "Refuerzos" sets its bench up again once play starts.
+    PortReinforcementsReset();
     // PORT: challenge roulette - "Maldición Rotativa" draws a fresh challenge for each new match.
     PortModChallengeReroll();
     // PORT: challenge roulette - this match's two achievements, and tell the companion app a match
@@ -1430,6 +1433,8 @@ void cGame::Update(float deltaTime)
     // PORT: challenge roulette - "Jogo Bonito" (see Game/JogoBonito.h). After Chomp Árbitro, which
     // clears the shared on-screen meter whenever it isn't the active challenge.
     PortJogoBonitoUpdate(m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME);
+    // PORT: challenge roulette - "Refuerzos" (see Game/Reinforcements.h). Also publishes the meter.
+    PortReinforcementsUpdate(deltaTime, m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME);
 
     // PORT: challenge roulette - "Papa Caliente" (see PortHotPotatoUpdate above).
     if (PortModChallengeGetActive() == PORT_CHALLENGE_HOT_POTATO
@@ -1860,6 +1865,8 @@ void cGame::InitGameState(eGameState state)
     {
     case GS_KICKOFF:
         m_pGameClock->Stop();
+        // PORT: challenge roulette - "Refuerzos": the kickoff pass needs a teammate on the pitch.
+        PortReinforcementsBeforeKickoff();
         ResetForKickOff();
         break;
 

@@ -2213,13 +2213,14 @@ static void DrawChallengeBanner(void)
     }
 
     const bool jogo = active == PORT_CHALLENGE_JOGO_BONITO;
+    const bool refuerzos = active == PORT_CHALLENGE_REINFORCEMENTS;
     if (jogo && meterTarget > 0 && meterProgress >= meterTarget)
         DrawStackedNotice("##challenge_meter_ready", row++, now + 1.0, now, kBlue,
                           "¡JOGO BONITO!  L + R = Estrella para todo el equipo");
     else if (now < s_meterUntil && meterTarget > 0)
         DrawProgressNotice("##challenge_meter", row++, s_meterUntil, now, PortModChallengeName(active),
-                           meterProgress, meterTarget, jogo ? kBlue : kRed);
-    if (now < s_meterFullUntil && !jogo)
+                           meterProgress, meterTarget, jogo ? kBlue : (refuerzos ? kGreen : kRed));
+    if (now < s_meterFullUntil && !jogo && !refuerzos)
         DrawStackedNotice("##challenge_meter_full", row++, s_meterFullUntil, now, kRed, "¡Falta! Ahí viene el Chomp");
 
     if (now < s_skipNoticeUntil)
