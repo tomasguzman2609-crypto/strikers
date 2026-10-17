@@ -1510,11 +1510,17 @@ void CharacterElectrocutionEffect(cCharacter* pCharacter, const nlVector3& v3Pos
         pCharacter->m_pCharacterSFX->Stop((Audio::eCharSFX)0x46, cGameSFX::SFX_STOP_FIRST);
         pCharacter->Play3DSFX((Audio::eCharSFX)0x46, (PosUpdateMethod)2, 100.0f);
         // PORT: sfx/SFXCHAR_WARIO_EFFORTS_Electrocute_01.wav always takes over
-        // when Wario is the one getting electrocuted. Falls back to the
-        // original random dialogue for every other character (and for Wario
-        // too if no such file was found).
-        if (pCharacter->m_eCharacterClass != WARIO
-            || !PortCustomSFXPlay("SFXCHAR_WARIO_EFFORTS_Electrocute_01"))
+        // when Wario is the one getting electrocuted, and
+        // sfx/SFXCHAR_MYSTERY_EFFORTS_Electrocute_01.wav when it is the Super
+        // Team's mystery character. Falls back to the original random dialogue
+        // for every other character (and for those two too if their file
+        // wasn't found).
+        const char* szCustomClip = NULL;
+        if (pCharacter->m_eCharacterClass == WARIO)
+            szCustomClip = "SFXCHAR_WARIO_EFFORTS_Electrocute_01";
+        else if (pCharacter->m_eCharacterClass == MYSTERY)
+            szCustomClip = "SFXCHAR_MYSTERY_EFFORTS_Electrocute_01";
+        if (szCustomClip == NULL || !PortCustomSFXPlay(szCustomClip))
         {
             pCharacter->PlayRandomCharDialogue(4, (PosUpdateMethod)2, 100.0f, -1.0f);
         }
