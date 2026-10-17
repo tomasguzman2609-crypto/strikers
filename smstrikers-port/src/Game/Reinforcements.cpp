@@ -71,15 +71,31 @@ void PublishMeter()
     }
 }
 
-// Brings one fielder off the bench: into its own half, level with the ball's side of the pitch,
-// with a Mushroom to get it into the game. bMushroom false for a kickoff, which places everyone itself.
-void BringOnNext(int side, bool bMushroom)
+// The next benched fielder to come on: one a waiting local player's pad is parked on, if any, so
+// that player is back in the game first; else the first one on the bench. -1 if the bench is empty.
+int NextOffBench(int side)
 {
-    cTeam* pTeam = g_pTeams[side];
+    int nFirst = -1;
     for (int i = 0; i < 4; i++)
     {
         if (!PortShockFantasmaIsBenched(side, i))
             continue;
+        if (g_pTeams[side]->GetFielder(i)->GetGlobalPad() != NULL)
+            return i;
+        if (nFirst < 0)
+            nFirst = i;
+    }
+    return nFirst;
+}
+
+// Brings one fielder off the bench: into its own half, with a Mushroom to get it into the game.
+// bMushroom false for a kickoff, which places everyone itself.
+void BringOnNext(int side, bool bMushroom)
+{
+    cTeam* pTeam = g_pTeams[side];
+    const int i = NextOffBench(side);
+    if (i >= 0)
+    {
         PortShockFantasmaSetBenched(side, i, false);
 
         cFielder* pFielder = pTeam->GetFielder(i);
@@ -101,7 +117,6 @@ void BringOnNext(int side, bool bMushroom)
                 pFielder->InitBlur(0);
             }
         }
-        return;
     }
 }
 
@@ -116,39 +131,19 @@ void EmptyBenches()
     }
 }
 
-// Benches every fielder of a human team but its captain and the ones other local players drive.
+// Benches every fielder of a human team but its captain, however many local players the team has:
+// the first pad moves onto the captain, any others stay parked with their benched fielder (and do
+// nothing, see PortReinforcementsPadOnBench) until it comes on.
 void SetUpBenches()
 {
     for (int side = 0; side < 2; side++)
     {
         cTeam* pTeam = g_pTeams[side];
-        if (pTeam == NULL)
+        if (pTeam == NULL || CountHumans(pTeam) == 0)
             continue;
-        const int nHumans = CountHumans(pTeam);
-        if (nHumans == 0)
-            continue;
-
-        int nKeep = nHumans > 1 ? nHumans : 1;
-        bool bKeep[4] = { false, false, false, false };
-        for (int i = 0; i < 4 && nKeep > 0; i++)
-        {
-            if (pTeam->GetFielder(i) == pTeam->GetCaptain())
-            {
-                bKeep[i] = true;
-                nKeep--;
-            }
-        }
-        for (int i = 0; i < 4 && nKeep > 0; i++)
-        {
-            if (!bKeep[i] && pTeam->GetFielder(i)->GetGlobalPad() != NULL)
-            {
-                bKeep[i] = true;
-                nKeep--;
-            }
-        }
         for (int i = 0; i < 4; i++)
         {
-            if (!bKeep[i])
+            if (pTeam->GetFielder(i) != pTeam->GetCaptain())
                 PortShockFantasmaSetBenched(side, i, true);
         }
     }
@@ -209,6 +204,23 @@ bool PortReinforcementsBlocksPass(cFielder* pFielder)
     {
         if (g_pTeams[side] == pFielder->m_pTeam)
             return AnyBenched(side) && CountOnPitch(side) < 2;
+    }
+    return false;
+}
+
+bool PortReinforcementsPadOnBench(cFielder* pFielder)
+{
+    if (!Active() || pFielder == NULL)
+        return false;
+    for (int side = 0; side < 2; side++)
+    {
+        if (g_pTeams[side] == NULL || g_pTeams[side] != pFielder->m_pTeam)
+            continue;
+        for (int i = 0; i < 4; i++)
+        {
+            if (g_pTeams[side]->GetFielder(i) == pFielder)
+                return PortShockFantasmaIsBenched(side, i);
+        }
     }
     return false;
 }
