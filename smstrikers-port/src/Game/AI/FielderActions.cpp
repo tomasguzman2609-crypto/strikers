@@ -3935,8 +3935,8 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
     // own init function, called once whenever the action actually starts
     // (human input or AI alike go through SetAction(ACTION_SLIDE_ATTACK)
     // here, same as every other action), not a hardcoded button check.
-    // Always plays at normal speed (PortCustomSFXPlay's default minScale),
-    // so it never gets caught by any Super Strike slow-mo.
+    // Like every custom clip it follows the game's slow motion, but never
+    // below 0.75x (see kSlowMoFloor in custom_sfx.cpp).
     if (m_eCharacterClass == MYSTERY)
         PortCustomSFXPlay("SFXCHAR_Tackle_01");
 

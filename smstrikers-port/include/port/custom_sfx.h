@@ -23,15 +23,15 @@ void PortCustomSFXInit(void);
 // decoded and started cleanly), 0 if there is no such file - so a call site
 // can fall back to the game's own sound only when nothing was dropped in.
 //
-// Always plays at normal speed, regardless of the sim's current slow-motion
-// time scale (see PortSimTimeScalePtr in FixedUpdateTask.cpp). Use this for
-// ordinary one-shot drop-ins (a hit, a tackle, the ball clanging off the
-// post) that are not part of a cinematic/QTE.
+// Slows down with the sim's slow-motion time scale (see PortSimTimeScalePtr
+// in FixedUpdateTask.cpp), like the game's own sounds, but never below 0.75x
+// (kSlowMoFloor in custom_sfx.cpp) so it stays intelligible. At normal speed
+// it plays at its natural rate.
 int PortCustomSFXPlay(const char* name);
 
-// Same as PortCustomSFXPlay in every way that matters now: also always
-// plays at normal speed, immune to the sim's slow-motion time scale (see
-// kVoiceLineMinScale in custom_sfx.cpp, currently 1.0). Kept as a separate
+// Same as PortCustomSFXPlay in every way that matters now: also follows the
+// sim's slow motion down to the same 0.75x floor (see kVoiceLineMinScale in
+// custom_sfx.cpp). Kept as a separate
 // entry point for voice lines played across a cinematic/QTE (the Super
 // Strike windup/kick, the HyperStrike charge/shot) in case that call site
 // ever needs different handling again later - today it behaves exactly

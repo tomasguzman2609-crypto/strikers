@@ -19,13 +19,13 @@ constexpr int kMixSampleRate = 32000;
 constexpr int kMixChannels = 2;
 constexpr int kMaxVoices = 4;
 
-// PortCustomSFXPlayFixed's playback-rate floor. 1.0 means "never slower
-// than normal speed" - i.e. completely immune to the sim's slow-motion time
-// scale, same as PortCustomSFXPlay. Custom clips (windup/kick/charge/shot
-// voice lines included) always play at their natural speed now, regardless
-// of what the Super Strike matrix-cam or anything else does to the sim's
-// own time scale.
-constexpr float kVoiceLineMinScale = 1.0f;
+// The playback-rate floor every custom clip uses. Clips follow the sim's
+// slow-motion time scale (perfect pass 0.5, Super Strike windup 0.4-0.6, its
+// last instant 0.1, the matrix-cam close-up near 0) but never drop below
+// this, so they always run a bit faster than the game's own slow-mo and stay
+// intelligible: a clip plays at max(time scale, kSlowMoFloor).
+constexpr float kSlowMoFloor = 0.75f;
+constexpr float kVoiceLineMinScale = kSlowMoFloor;
 
 struct Clip
 {
@@ -40,9 +40,8 @@ struct Voice
     double framePos = 0.0; // in frames (sample pairs), not samples; fractional so
                             // it can track the game's slow-motion timescale below
     float minScale = 1.0f; // playback-rate floor; both PortCustomSFXPlay and
-                            // PortCustomSFXPlayFixed set this to 1.0 (see
-                            // kVoiceLineMinScale), so no custom clip ever
-                            // tracks the sim's slow-motion time scale
+                            // PortCustomSFXPlayFixed set this to kSlowMoFloor,
+                            // so clips slow down with the sim but never below it
 };
 
 // PORT: the game slows its own audio down (pitch + speed) during slow-motion
@@ -318,14 +317,10 @@ extern "C" void PortCustomSFXInit(void)
 
 extern "C" int PortCustomSFXPlay(const char* name)
 {
-    // minScale=1.0: never run slower than normal speed. Regular one-shot
-    // drop-ins (a hit, a tackle, the goalpost clang) are not part of any
-    // Super Strike cinematic, so they should never sound slowed down just
-    // because the sim's time scale happens to be off of 1.0 somewhere else
-    // in the match - only PortCustomSFXPlayFixed's voice lines (played at
-    // call sites that are themselves part of a slow-mo special) are meant
-    // to track that.
-    return PlayInternal(name, 1.0f);
+    // Tracks the sim's slow motion like the game's own sounds do, but never
+    // below kSlowMoFloor (see there). At normal speed the time scale is 1.0,
+    // so outside slow-mo nothing changes.
+    return PlayInternal(name, kSlowMoFloor);
 }
 
 extern "C" int PortCustomSFXPlayFixed(const char* name)
