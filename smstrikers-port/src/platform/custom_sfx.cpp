@@ -25,7 +25,10 @@ constexpr int kMaxVoices = 4;
 // this, so they always run a bit faster than the game's own slow-mo and stay
 // intelligible: a clip plays at max(time scale, kSlowMoFloor).
 constexpr float kSlowMoFloor = 0.75f;
-constexpr float kVoiceLineMinScale = kSlowMoFloor;
+// PortCustomSFXPlayFixed's floor: the Super Strike / HyperStrike voice lines
+// (windup, kick, charge, shot) never slow down at all, however slow the
+// special's own cinematic runs.
+constexpr float kVoiceLineMinScale = 1.0f;
 
 struct Clip
 {
@@ -40,8 +43,9 @@ struct Voice
     double framePos = 0.0; // in frames (sample pairs), not samples; fractional so
                             // it can track the game's slow-motion timescale below
     float minScale = 1.0f; // playback-rate floor; both PortCustomSFXPlay and
-                            // PortCustomSFXPlayFixed set this to kSlowMoFloor,
-                            // so clips slow down with the sim but never below it
+                            // PortCustomSFXPlayFixed set it (kSlowMoFloor and
+                            // kVoiceLineMinScale), so clips slow down with the
+                            // sim but never below it
 };
 
 // PORT: the game slows its own audio down (pitch + speed) during slow-motion

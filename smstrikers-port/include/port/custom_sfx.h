@@ -29,13 +29,10 @@ void PortCustomSFXInit(void);
 // it plays at its natural rate.
 int PortCustomSFXPlay(const char* name);
 
-// Same as PortCustomSFXPlay in every way that matters now: also follows the
-// sim's slow motion down to the same 0.75x floor (see kVoiceLineMinScale in
-// custom_sfx.cpp). Kept as a separate
-// entry point for voice lines played across a cinematic/QTE (the Super
-// Strike windup/kick, the HyperStrike charge/shot) in case that call site
-// ever needs different handling again later - today it behaves exactly
-// like PortCustomSFXPlay.
+// For the voice lines played across a Super Strike / HyperStrike (windup,
+// kick, charge, shot): unlike PortCustomSFXPlay these never slow down - they
+// always play at normal speed, however slow the cinematic runs (see
+// kVoiceLineMinScale in custom_sfx.cpp).
 int PortCustomSFXPlayFixed(const char* name);
 
 // Adds any currently-playing custom clips into `pcm` (interleaved, signed
