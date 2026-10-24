@@ -5,6 +5,7 @@
 #include "Game/AchievementHooks.h"
 #include "Game/ChompReferee.h"
 #include "Game/VarReview.h"
+#include "Game/RivalSidekicks.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -1699,6 +1700,11 @@ bool cFielder::InitActionHitReact(cPlayer* pAttacker, unsigned short desiredFaci
         CleanUpPowerupEffect();
         return false;
     }
+
+    // PORT: challenge roulette extras - "Compañeros únicos rival": a CPU Koopa's shell can shrug the
+    // hit off entirely (and it then counts as no tackle at all).
+    if (PortRivalSidekickResistsTackle(this, pAttacker))
+        return false;
 
     // PORT: challenge roulette - achievements count tackles; read the victim's state (e.g. a shot
     // being charged) before anything below changes it.
@@ -4318,6 +4324,11 @@ void cFielder::DoSlideAttackStats()
  */
 void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
 {
+    // PORT: challenge roulette extras - "Compañeros únicos rival": a CPU Koopa's shell can shrug the
+    // slide off entirely.
+    if (PortRivalSidekickResistsTackle(this, pAttacker))
+        return;
+
     // PORT: challenge roulette - achievements count tackles; read the victim's state before
     // CleanUpPowerupEffect and the rest change it.
     if (!IsFallenDown(0.0f))

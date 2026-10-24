@@ -181,6 +181,11 @@ typedef int (*PortModChallengeActionFilter)(int padIndex, int action);
 void PortModChallengeSetActionFilter(PortModChallengeActionFilter filter);
 int PortModChallengeActionBlocked(int padIndex, int action);
 
+// Extras: switches in the companion app that apply on top of (and independently of) the roulette's
+// challenge, kept in mods/extras.txt as "name=0/1" lines and polled along with challenge.txt.
+// "rival_sidekicks": "Compañeros únicos rival" (see Game/RivalSidekicks.h). Non-zero when on.
+int PortModExtraRivalSidekicks(void);
+
 // Resets the active challenge to PORT_CHALLENGE_NONE, both in memory and by rewriting
 // challenge.txt, so the companion app can tell the match ended and offer another spin. Call this
 // exactly once per match end (not every frame).

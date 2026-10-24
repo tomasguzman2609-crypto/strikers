@@ -1,3 +1,4 @@
+#include "Game/RivalSidekicks.h"
 #include "Game/AchievementHooks.h"
 #include "Game/Player.h"
 #include "Game/Character.h"
@@ -60,7 +61,11 @@ static inline float DoClampPassSpeed(float fNewPassGroundSpeed, cPlayer* pPlayer
     float fMaxPassSpeed = pPlayer->m_pTweaks->fPassGroundSpeedMax;
     float fMinPassSpeed = pPlayer->m_pTweaks->fPassGroundSpeedMin;
     fNewPassGroundSpeed = (fNewPassGroundSpeed >= fMinPassSpeed) ? fNewPassGroundSpeed : fMinPassSpeed;
-    return (fNewPassGroundSpeed <= fMaxPassSpeed) ? fNewPassGroundSpeed : fMaxPassSpeed;
+    fNewPassGroundSpeed = (fNewPassGroundSpeed <= fMaxPassSpeed) ? fNewPassGroundSpeed : fMaxPassSpeed;
+    // PORT: challenge roulette extras - "Compañeros únicos rival": the CPU's Birdos pass faster.
+    // Every pass's ground speed goes through here, and the lead/intercept point is worked out from
+    // it, so the receiver still meets the ball.
+    return fNewPassGroundSpeed * PortRivalSidekickPassSpeedScale(pPlayer);
 }
 
 static inline float DoCalculatePassSpeed(

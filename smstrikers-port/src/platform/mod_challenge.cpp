@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <string>
 
@@ -160,6 +161,31 @@ extern "C" void PortModChallengeSetMatchPlaying(int playing)
     }
 }
 
+static int g_extraRivalSidekicks = 0;
+
+// mods/extras.txt: "name=value" lines; a missing file or line means off.
+static void ReadExtras(void)
+{
+    int rivalSidekicks = 0;
+    if (FILE* f = fopen((g_modsDir + "/extras.txt").c_str(), "rb"))
+    {
+        char line[128];
+        while (fgets(line, sizeof line, f) != nullptr)
+        {
+            const char* key = "rival_sidekicks=";
+            if (strncmp(line, key, strlen(key)) == 0)
+                rivalSidekicks = atoi(line + strlen(key)) != 0 ? 1 : 0;
+        }
+        fclose(f);
+    }
+    g_extraRivalSidekicks = rivalSidekicks;
+}
+
+extern "C" int PortModExtraRivalSidekicks(void)
+{
+    return g_extraRivalSidekicks;
+}
+
 extern "C" void PortModChallengeUpdate(void)
 {
     if (!g_havePath)
@@ -170,6 +196,7 @@ extern "C" void PortModChallengeUpdate(void)
         return;
     }
     g_pollCountdown = kPollEveryNFrames;
+    ReadExtras();
 
     std::string content;
     if (!ReadFile(content))

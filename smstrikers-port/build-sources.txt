@@ -342,6 +342,7 @@ Game/Replay.cpp
 Game/ReplayChoreo.cpp
 Game/ReplayManager.cpp
 Game/ResetTask.cpp
+Game/RivalSidekicks.cpp
 Game/RumbleActions.cpp
 Game/SAnim.cpp
 Game/SAnim/AnimRetargeter.cpp

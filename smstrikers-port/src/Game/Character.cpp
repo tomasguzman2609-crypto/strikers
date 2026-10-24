@@ -1,3 +1,4 @@
+#include "Game/RivalSidekicks.h"
 #include "Game/AchievementHooks.h"
 #include "Game/Character.h"
 #include "port/mod_challenge.h"
@@ -2321,6 +2322,11 @@ void cCharacter::UpdateMovementState(float fDeltaT)
             fDesiredSpeed *= 1.2f;
             fMaxActualSpeed *= 1.2f;
         }
+
+        // PORT: challenge roulette extras - "Compañeros únicos rival": the CPU's Toads are faster.
+        const float fSidekickScale = PortRivalSidekickSpeedScale(pFielder);
+        fDesiredSpeed *= fSidekickScale;
+        fMaxActualSpeed *= fSidekickScale;
     }
 
     switch (m_eMovementState)

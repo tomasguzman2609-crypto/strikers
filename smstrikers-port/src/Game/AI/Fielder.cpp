@@ -1,3 +1,4 @@
+#include "Game/RivalSidekicks.h"
 #include "port/region.h"  // PORT: one binary, three discs
 #include "Game/AI/Fielder.h"
 #include "Game/AchievementHooks.h"
@@ -1432,6 +1433,12 @@ void cFielder::CalcRegularShot(nlVector3& rv3Vel, nlVector3& rv3Target)
     float fDeltaY = pBall->m_v3Position.y - rv3Target.y;
     float fDistance = nlSqrt((fDeltaX * fDeltaX) + (fDeltaY * fDeltaY), true);
     fDesiredTime = fDistance * fDesiredTime;
+
+    // PORT: challenge roulette extras - "Compañeros únicos rival": the CPU's Hammer Bros shoot
+    // faster - same target, shorter flight, so ShootAtFast still lands it there. Not chip shots,
+    // whose lob is the point.
+    if (!mActionShotVars.bIsChipShot && !mActionLooseBallShotVars.bIsChipShot)
+        fDesiredTime *= PortRivalSidekickShotTimeScale(this);
 
     bool bIsChipShot2 = false;
     if (mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot)
