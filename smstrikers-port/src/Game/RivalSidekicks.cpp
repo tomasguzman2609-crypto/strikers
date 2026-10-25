@@ -60,9 +60,9 @@ bool PortRivalSidekickSpikes(cFielder* pVictim, cPlayer* pAttacker, bool bSlide)
     // Something to see: the shell flashes like a goalie's deflection.
     EmitGoalieCatch(pVictim, "goalie_deflect", false);
 
-    // The same move comes straight back at the attacker, from the Koopa outwards. The attacker is
-    // down (and no longer attacking) from here on, so the contact that keeps calling the reaction
-    // every frame doesn't trigger this again.
+    // The same move comes straight back at the attacker, from the Koopa outwards - both go down.
+    // The attacker is down (and no longer attacking) from here on, so the contact that keeps
+    // calling the reaction every frame doesn't trigger this again.
     if (bSlide)
     {
         pHitter->InitActionSlideAttackReact(pVictim, false);

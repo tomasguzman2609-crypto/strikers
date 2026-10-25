@@ -7,8 +7,8 @@
 //   - Toad:        moves 25% faster.
 //   - Hammer Bros: regular shots fly 50% faster (same target, shorter flight time).
 //   - Koopa:       spiky shell - a tackle or slide from a team with a real local player comes
-//                  straight back: the attacker gets the same hit or slide, the Koopa doesn't fall
-//                  or lose the ball.
+//                  straight back: the Koopa takes it as usual, and the attacker gets the same hit
+//                  or slide too.
 //   - Birdo:       passes 40% faster.
 // Teams with a real local player are never affected.
 
@@ -25,8 +25,8 @@ float PortRivalSidekickShotTimeScale(cFielder* pShooter);
 float PortRivalSidekickPassSpeedScale(cPlayer* pPasser);
 
 // From the start of the hit (bSlide false) and slide (bSlide true) reactions: if pVictim is a CPU
-// Koopa, sends the move back at pAttacker and returns true - the victim's own reaction must not
-// happen at all.
+// Koopa, sends the move back at pAttacker too (true if it did). The victim's own reaction still
+// goes ahead.
 bool PortRivalSidekickSpikes(cFielder* pVictim, cPlayer* pAttacker, bool bSlide);
 
 #endif // _RIVALSIDEKICKS_H_

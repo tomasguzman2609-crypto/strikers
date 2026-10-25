@@ -1701,17 +1701,16 @@ bool cFielder::InitActionHitReact(cPlayer* pAttacker, unsigned short desiredFaci
         return false;
     }
 
-    // PORT: challenge roulette extras - "Compañeros únicos rival": a CPU Koopa's spiky shell sends
-    // the hit back at the attacker (and it then counts as no tackle at all).
-    if (PortRivalSidekickSpikes(this, pAttacker, false))
-        return false;
-
     // PORT: challenge roulette - achievements count tackles; read the victim's state (e.g. a shot
     // being charged) before anything below changes it.
     PortAchievementHooksTackle(this, pAttacker);
     // PORT: challenge roulette - and so do "Chomp Árbitro" and "Modo VAR".
     PortChompRefereeTackle(this, pAttacker);
     PortVarTackle(this, pAttacker);
+    // PORT: challenge roulette extras - "Compañeros únicos rival": a CPU Koopa's spiky shell sends
+    // the hit back at the attacker as well (after the hooks above have counted the tackle); the
+    // Koopa still takes it below.
+    PortRivalSidekickSpikes(this, pAttacker, false);
 
     CleanUpPowerupEffect();
 
@@ -4324,10 +4323,6 @@ void cFielder::DoSlideAttackStats()
  */
 void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
 {
-    // PORT: challenge roulette extras - "Compañeros únicos rival": a CPU Koopa's spiky shell sends
-    // the slide back at the attacker.
-    if (PortRivalSidekickSpikes(this, pAttacker, true))
-        return;
 
     // PORT: challenge roulette - achievements count tackles; read the victim's state before
     // CleanUpPowerupEffect and the rest change it.
@@ -4336,6 +4331,10 @@ void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
         PortAchievementHooksTackle(this, pAttacker);
         PortChompRefereeTackle(this, pAttacker);
         PortVarTackle(this, pAttacker);
+        // PORT: challenge roulette extras - "Compañeros únicos rival": a CPU Koopa's spiky shell
+        // sends the slide back at the attacker as well (after the hooks above have counted it);
+        // the Koopa still takes it below.
+        PortRivalSidekickSpikes(this, pAttacker, true);
     }
 
     CleanUpPowerupEffect();
