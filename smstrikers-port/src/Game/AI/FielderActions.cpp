@@ -1701,9 +1701,9 @@ bool cFielder::InitActionHitReact(cPlayer* pAttacker, unsigned short desiredFaci
         return false;
     }
 
-    // PORT: challenge roulette extras - "Compañeros únicos rival": a CPU Koopa's shell can shrug the
-    // hit off entirely (and it then counts as no tackle at all).
-    if (PortRivalSidekickResistsTackle(this, pAttacker))
+    // PORT: challenge roulette extras - "Compañeros únicos rival": a CPU Koopa's spiky shell sends
+    // the hit back at the attacker (and it then counts as no tackle at all).
+    if (PortRivalSidekickSpikes(this, pAttacker, false))
         return false;
 
     // PORT: challenge roulette - achievements count tackles; read the victim's state (e.g. a shot
@@ -4324,9 +4324,9 @@ void cFielder::DoSlideAttackStats()
  */
 void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
 {
-    // PORT: challenge roulette extras - "Compañeros únicos rival": a CPU Koopa's shell can shrug the
-    // slide off entirely.
-    if (PortRivalSidekickResistsTackle(this, pAttacker))
+    // PORT: challenge roulette extras - "Compañeros únicos rival": a CPU Koopa's spiky shell sends
+    // the slide back at the attacker.
+    if (PortRivalSidekickSpikes(this, pAttacker, true))
         return;
 
     // PORT: challenge roulette - achievements count tackles; read the victim's state before

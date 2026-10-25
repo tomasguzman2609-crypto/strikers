@@ -47,7 +47,7 @@ float PortRivalSidekickPassSpeedScale(cPlayer* pPasser)
     return IsRivalSidekick(pPasser, BIRDO) ? 1.4f : 1.0f;
 }
 
-bool PortRivalSidekickResistsTackle(cFielder* pVictim, cPlayer* pAttacker)
+bool PortRivalSidekickSpikes(cFielder* pVictim, cPlayer* pAttacker, bool bSlide)
 {
     if (!IsRivalSidekick(pVictim, KOOPA) || pVictim->IsFallenDown(0.0f))
         return false;
@@ -55,9 +55,24 @@ bool PortRivalSidekickResistsTackle(cFielder* pVictim, cPlayer* pAttacker)
     if (pAttacker == NULL || pAttacker->m_eClassType != FIELDER || !((cFielder*)pAttacker)->IsAttacking()
         || ((cFielder*)pAttacker)->IsInvincible() || !TeamHasHuman(pAttacker->m_pTeam))
         return false;
-    if (nlRandomf(1.0f, &nlDefaultSeed) >= 0.5f)
-        return false;
+    cFielder* pHitter = (cFielder*)pAttacker;
+
     // Something to see: the shell flashes like a goalie's deflection.
     EmitGoalieCatch(pVictim, "goalie_deflect", false);
+
+    // The same move comes straight back at the attacker, from the Koopa outwards. The attacker is
+    // down (and no longer attacking) from here on, so the contact that keeps calling the reaction
+    // every frame doesn't trigger this again.
+    if (bSlide)
+    {
+        pHitter->InitActionSlideAttackReact(pVictim, false);
+    }
+    else
+    {
+        float dx = pHitter->m_v3Position.x - pVictim->m_v3Position.x;
+        float dy = pHitter->m_v3Position.y - pVictim->m_v3Position.y;
+        unsigned short aAway = (unsigned short)(int)(10430.378f * nlATan2f(dy, dx));
+        pHitter->InitActionHitReact(pVictim, aAway, false);
+    }
     return true;
 }
