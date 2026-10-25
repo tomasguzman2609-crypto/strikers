@@ -5810,6 +5810,21 @@ void cFielder::Update(float fDeltaT)
 /**
  * Offset/Address/Size: 0x21D8 | 0x8001B514 | size: 0x174
  */
+// PORT: challenge roulette - "Súper Ítems" is a buff for the CPU: true for a fielder of a CPU-only
+// team (no real local player on it) while it is active.
+static bool PortSuperItemsFor(cFielder* pFielder)
+{
+    if (PortModChallengeGetActive() != PORT_CHALLENGE_SUPER_ITEMS || pFielder->m_pTeam == NULL)
+        return false;
+    for (int i = 0; i < 5; i++)
+    {
+        cPlayer* pPlayer = pFielder->m_pTeam->GetPlayer(i);
+        if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL)
+            return false;
+    }
+    return true;
+}
+
 void cFielder::ThrowPowerup()
 {
     cFielder* pTarget;
@@ -5823,16 +5838,16 @@ void cFielder::ThrowPowerup()
         switch (m_ePowerup)
         {
         case POWER_UP_STAR:
-            // PORT: challenge roulette - "Súper Ítems" doubles the Star.
+            // PORT: challenge roulette - "Súper Ítems" doubles the CPU's Stars.
             m_tPowerupEffectTime.SetSeconds(g_pGame->m_pGameTweaks->fStarEffectTime
-                                            * (PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS ? 2.0f : 1.0f));
+                                            * (PortSuperItemsFor(this) ? 2.0f : 1.0f));
             EmitStar(this);
             break;
         case POWER_UP_MUSHROOM:
         {
             f32 fMushroomTime = g_pGame->m_pGameTweaks->fMushroomEffectTime;
-            // PORT: challenge roulette - "Súper Ítems" doubles the Mushroom.
-            if (PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS)
+            // PORT: challenge roulette - "Súper Ítems" doubles the CPU's Mushrooms.
+            if (PortSuperItemsFor(this))
                 fMushroomTime *= 2.0f;
             switch (m_eCharacterClass)
             {

@@ -331,6 +331,8 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
 /**
  * Offset/Address/Size: 0x4F00 | 0x8005F7EC | size: 0xA98
  */
+static bool PortTeamHasPlayer1(cTeam* pTeam); // PORT: defined with AwardPowerup below
+
 u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPowerups, Bowser* pBowser)
 {
     eThrowStyle eStyle;
@@ -532,10 +534,11 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
         pTargetFielders[a] = pTargetTeam->GetFielder(a);
     }
 
-    // PORT: challenge roulette - "Súper Ítems": every thrown item is large, bunches included (the
-    // game only ever sizes up single ones). Bananas get it again below, after Donkey Kong's own
-    // medium-banana rule.
-    const bool bPortSuperItems = PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS;
+    // PORT: challenge roulette - "Súper Ítems" (a buff for the CPU): every item a CPU-only team
+    // throws is large, bunches included (the game only ever sizes up single ones). Bananas get it
+    // again below, after Donkey Kong's own medium-banana rule.
+    const bool bPortSuperItems = PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS && pThrower != NULL
+                              && !PortTeamHasPlayer1(pThrower->m_pTeam);
     if (bPortSuperItems)
     {
         eSize = POWERUPSIZE_LARGE;
@@ -1376,9 +1379,10 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         nNumOfPowerups = 1;
     }
 
-    // PORT: challenge roulette - "Súper Ítems": throwable items come in bigger bunches, 1 -> 3 and
-    // 3 -> 5 (5 stays 5). Stars, Mushrooms and Chain Chomps stay single.
-    if (PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS)
+    // PORT: challenge roulette - "Súper Ítems" (a buff for the CPU): a CPU-only team's throwable
+    // items come in bigger bunches, 1 -> 3 and 3 -> 5 (5 stays 5). Stars, Mushrooms and Chain
+    // Chomps stay single.
+    if (PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS && !PortTeamHasPlayer1(pTeam))
     {
         switch (powerUpType)
         {

@@ -169,9 +169,19 @@ void ChainChomp::Update(float fDeltaT)
                 PowerupBase::PlayPowerupSound(POWER_UP_CHAIN_CHOMP, PowerupBase::PWRUP_SOUND_END, mpPhysObj, 100.0f);
                 meChainChompState = CHAIN_STATE_CHASE;
                 SetAnimState(*mpIdleAnim, 0.0f, PM_CYCLIC);
-                // PORT: challenge roulette - "Súper Ítems" doubles the Chomp's chase.
-                mtStateTimer.SetSeconds(g_pGame->m_pGameTweaks->fChainChompActiveTime
-                                        * (PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS ? 2.0f : 1.0f));
+                // PORT: challenge roulette - "Súper Ítems" doubles the chase of a Chomp a CPU-only team
+                // threw, not one a real player's team threw.
+                {
+                    bool bCpuChomp = PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS && mpThrower != NULL
+                                  && mpThrower->m_pTeam != NULL;
+                    for (int i = 0; bCpuChomp && i < 5; i++)
+                    {
+                        cPlayer* pPlayer = mpThrower->m_pTeam->GetPlayer(i);
+                        if (pPlayer != NULL && pPlayer->GetGlobalPad() != NULL)
+                            bCpuChomp = false;
+                    }
+                    mtStateTimer.SetSeconds(g_pGame->m_pGameTweaks->fChainChompActiveTime * (bCpuChomp ? 2.0f : 1.0f));
+                }
             }
         }
         break;
