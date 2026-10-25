@@ -85,6 +85,10 @@ extern "C" {
 //     captain on the pitch; the other fielders run on 10s, 25s and 45s into play, each with a
 //     Mushroom. While down to one fielder, that pad can't pass. Should be labeled "Refuerzos" in the
 //     companion app.
+//   - PORT_CHALLENGE_SUPER_ITEMS (31) is an event for both teams: throwable items come in bigger
+//     bunches (1 -> 3, 3 -> 5 shells, bananas or Bob-ombs), always large, and Stars, Mushrooms and
+//     the Chain Chomp's chase last twice as long. Should be labeled "Súper Ítems" in the companion
+//     app.
 enum ePortChallenge
 {
     PORT_CHALLENGE_NONE = 0,
@@ -118,6 +122,7 @@ enum ePortChallenge
     PORT_CHALLENGE_REFLECTING_GOALIE = 28,       // a CPU goalie's saves of a human team's shots are swatted back at the shooter - "Arquero Reflectante"
     PORT_CHALLENGE_JOGO_BONITO = 29,             // stylish plays fill a meter; full, L+R gives the human team a 1.3s Star - "Jogo Bonito"
     PORT_CHALLENGE_REINFORCEMENTS = 30,          // a human team starts with its captain alone; teammates come on at 10s, 25s and 45s - "Refuerzos"
+    PORT_CHALLENGE_SUPER_ITEMS = 31,             // both teams: bigger bunches of items, always large; Stars/Mushrooms/Chomps last twice as long - "Súper Ítems"
 
     PORT_CHALLENGE_COUNT                         // one past the last valid ID
 };

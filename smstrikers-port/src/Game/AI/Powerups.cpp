@@ -532,6 +532,15 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
         pTargetFielders[a] = pTargetTeam->GetFielder(a);
     }
 
+    // PORT: challenge roulette - "Súper Ítems": every thrown item is large, bunches included (the
+    // game only ever sizes up single ones). Bananas get it again below, after Donkey Kong's own
+    // medium-banana rule.
+    const bool bPortSuperItems = PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS;
+    if (bPortSuperItems)
+    {
+        eSize = POWERUPSIZE_LARGE;
+    }
+
     for (j = 0; j < nnumOfPowerups; j++)
     {
         bFoundLocation = false;
@@ -563,6 +572,10 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                         eSize = POWERUPSIZE_MEDIUM;
                     }
                     break;
+                }
+                if (bPortSuperItems)
+                {
+                    eSize = POWERUPSIZE_LARGE;
                 }
 
                 switch (eSize)
@@ -1361,6 +1374,28 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     if (nlSingleton<GameInfoManager>::Instance()->GetCustomPowerups() == CP_GIANT)
     {
         nNumOfPowerups = 1;
+    }
+
+    // PORT: challenge roulette - "Súper Ítems": throwable items come in bigger bunches, 1 -> 3 and
+    // 3 -> 5 (5 stays 5). Stars, Mushrooms and Chain Chomps stay single.
+    if (PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS)
+    {
+        switch (powerUpType)
+        {
+        case POWER_UP_GREEN_SHELL:
+        case POWER_UP_RED_SHELL:
+        case POWER_UP_SPINY_SHELL:
+        case POWER_UP_FREEZE_SHELL:
+        case POWER_UP_BANANA:
+        case POWER_UP_BOBOMB:
+            if (nNumOfPowerups == 1)
+                nNumOfPowerups = 3;
+            else if (nNumOfPowerups == 3)
+                nNumOfPowerups = 5;
+            break;
+        default:
+            break;
+        }
     }
 
     // PORT: challenge roulette - "only mushroom" forces whatever just got rolled above back to

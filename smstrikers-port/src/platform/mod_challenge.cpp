@@ -260,6 +260,7 @@ extern "C" const char* PortModChallengeName(int challenge)
         "Arquero Reflectante",
         "Jogo Bonito",
         "Refuerzos",
+        "Súper Ítems",
     };
     if (challenge <= PORT_CHALLENGE_NONE || challenge >= PORT_CHALLENGE_COUNT)
         return "";

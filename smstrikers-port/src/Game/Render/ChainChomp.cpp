@@ -1,5 +1,6 @@
 #include "Game/AchievementHooks.h"
 #include "Game/Render/ChainChomp.h"
+#include "port/mod_challenge.h"
 #include "NL/vmath.h"
 
 #include "Game/Game.h"
@@ -168,7 +169,9 @@ void ChainChomp::Update(float fDeltaT)
                 PowerupBase::PlayPowerupSound(POWER_UP_CHAIN_CHOMP, PowerupBase::PWRUP_SOUND_END, mpPhysObj, 100.0f);
                 meChainChompState = CHAIN_STATE_CHASE;
                 SetAnimState(*mpIdleAnim, 0.0f, PM_CYCLIC);
-                mtStateTimer.SetSeconds(g_pGame->m_pGameTweaks->fChainChompActiveTime);
+                // PORT: challenge roulette - "Súper Ítems" doubles the Chomp's chase.
+                mtStateTimer.SetSeconds(g_pGame->m_pGameTweaks->fChainChompActiveTime
+                                        * (PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS ? 2.0f : 1.0f));
             }
         }
         break;

@@ -1,3 +1,4 @@
+#include "port/mod_challenge.h"
 #include "Game/RivalSidekicks.h"
 #include "port/region.h"  // PORT: one binary, three discs
 #include "Game/AI/Fielder.h"
@@ -5822,12 +5823,17 @@ void cFielder::ThrowPowerup()
         switch (m_ePowerup)
         {
         case POWER_UP_STAR:
-            m_tPowerupEffectTime.SetSeconds(g_pGame->m_pGameTweaks->fStarEffectTime);
+            // PORT: challenge roulette - "Súper Ítems" doubles the Star.
+            m_tPowerupEffectTime.SetSeconds(g_pGame->m_pGameTweaks->fStarEffectTime
+                                            * (PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS ? 2.0f : 1.0f));
             EmitStar(this);
             break;
         case POWER_UP_MUSHROOM:
         {
             f32 fMushroomTime = g_pGame->m_pGameTweaks->fMushroomEffectTime;
+            // PORT: challenge roulette - "Súper Ítems" doubles the Mushroom.
+            if (PortModChallengeGetActive() == PORT_CHALLENGE_SUPER_ITEMS)
+                fMushroomTime *= 2.0f;
             switch (m_eCharacterClass)
             {
             case LUIGI:
