@@ -471,6 +471,8 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
     OSReport("[match] begin rematch=%d kickoff=%d\n",
              bRematch ? 1 : 0, bStraightToKickoff ? 1 : 0);
 
+    // PORT: challenge roulette - a new match hasn't been ended early by any challenge yet.
+    gPortMatchEndedEarly = false;
     // PORT: challenge roulette - "Shock Fantasma" eliminations last one match only.
     PortShockFantasmaReset();
     // PORT: challenge roulette - "Chomp Árbitro" counts fouls per match.
@@ -674,6 +676,10 @@ void cGame::CheckForGoal()
                     && !PortTeamHasHuman(pScorers) && PortTeamHasHuman(pOther)
                     && pScorers->m_nScore > pOther->m_nScore)
                 {
+                    // The match ends here, before the clock does: have the goal's stats handler
+                    // record the winner the way it does for a golden goal, or a cup or tournament
+                    // never gets the round's result.
+                    gPortMatchEndedEarly = true;
                     InitGameState(GS_END_GAME);
                 }
             }
@@ -1255,6 +1261,8 @@ extern "C" void PortDebugFrame(void)
 // team "has a human" if any of its player slots is bound to a cGlobalPad at all - CPU slots never
 // have one, so no separate pad-index/connection check is needed (same pattern already used
 // elsewhere in this codebase, e.g. cPlayer::GetGlobalPad()->m_padIndex).
+bool gPortMatchEndedEarly = false;
+
 static bool PortTeamHasHuman(cTeam* pTeam)
 {
     if (pTeam == NULL)

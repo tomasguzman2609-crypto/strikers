@@ -281,7 +281,8 @@ void StatsTracker::eventHandler(Event* event, void* userData)
         if (g_pGame != 0)
         {
             float gameDuration = g_pGame->m_fGameDuration;
-            if (g_pGame->GetGameTime() >= gameDuration)
+            // PORT: challenge roulette - or the goal ended the match early (gPortMatchEndedEarly).
+            if (g_pGame->GetGameTime() >= gameDuration || gPortMatchEndedEarly)
             {
                 TeamStats awayStats = Instance()->mCurrentTeamStats[0];
                 TeamStats homeStats = Instance()->mCurrentTeamStats[1];

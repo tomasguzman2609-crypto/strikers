@@ -98,4 +98,10 @@ public:
 
 extern cGame* g_pGame;
 
+// PORT: challenge roulette - set when a challenge ends the match on a goal before the clock runs out
+// ("Ventaja Oponente = Perdiste"), so the goal's stats handler records the result like a golden
+// goal's (StatsTracker::TrackWinner - which in a cup or tournament is what awards the round).
+// Cleared by cGame::BeginGame.
+extern bool gPortMatchEndedEarly;
+
 #endif // _GAME_H_
