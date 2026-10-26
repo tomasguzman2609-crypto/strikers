@@ -35,6 +35,27 @@ int PortCustomSFXPlay(const char* name);
 // kVoiceLineMinScale in custom_sfx.cpp).
 int PortCustomSFXPlayFixed(const char* name);
 
+// sfx/sonidos.txt: replace any of the game's sounds without recompiling, one
+// line per sound, '#' for comments:
+//   SOUND_NAME = file.wav, volume%, on|off
+// file.wav lives in sfx/ ("-" silences the game's sound instead); the volume
+// (0-200, default 100) and on/off (default on; off = the game's own sound) are
+// optional. Re-read about once a second, so it can be edited with the game
+// running. A line for one of the clips the game already plays by name above
+// (e.g. SFXCHAR_WARIO_EFFORTS_Electrocute_01) sets its file and volume too.
+//
+// The game registers every sound name with its MusyX id at startup, and then
+// calls PortCustomSFXNamesReady(), which writes them to
+// sfx/_lista_de_sonidos.txt for reference.
+void PortCustomSFXRegisterName(unsigned long sfxID, const char* name);
+void PortCustomSFXNamesReady(void);
+
+// Asked by the platform audio layer before it starts game sound `sfxID`:
+// returns 1 if sonidos.txt replaces it (the replacement has started, or it is
+// silenced), so the game's own sound must not play; 0 to play it as usual.
+// Replacements play unpositioned, at their own volume.
+int PortCustomSFXReplace(unsigned long sfxID);
+
 // Adds any currently-playing custom clips into `pcm` (interleaved, signed
 // 16-bit, stereo, `frames` sample pairs), with saturation. Called once per
 // audio buffer from the platform audio backend, after MusyX has rendered it.

@@ -1,3 +1,5 @@
+#include "port/custom_sfx.h"
+#include <string.h>
 #include "NL/nlAVLTree.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/AudioStream.h"
@@ -225,7 +227,14 @@ void AudioLoader::SetupSoundDefinesAVLTree()
         newNode->uHashVal = nlStringLowerHash(newNode->musyxStr);
 
         gMusyXSoundDefineMap.Add(newNode->uHashVal, newNode);
+
+        // PORT: sfx/sonidos.txt names sounds; the groups share the id space, so leave them out.
+        if (strncmp(newNode->musyxStr, "GRP", 3) != 0)
+        {
+            PortCustomSFXRegisterName(newNode->musyxID, newNode->musyxStr);
+        }
     }
+    PortCustomSFXNamesReady();
 }
 
 namespace Audio

@@ -3,10 +3,15 @@
 #include "port/custom_sfx.h"
 #include "port/host.h"
 
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace
@@ -46,6 +51,16 @@ struct Voice
                             // PortCustomSFXPlayFixed set it (kSlowMoFloor and
                             // kVoiceLineMinScale), so clips slow down with the
                             // sim but never below it
+    float gain = 1.0f; // the clip's volume from sfx/sonidos.txt (1.0 = as recorded)
+};
+
+// One line of sfx/sonidos.txt: which file replaces a game sound, how loud, and
+// whether the replacement is on at all (off = the game's own sound plays).
+struct Replacement
+{
+    std::string file; // beside sonidos.txt in sfx/; "-" = silence the game's sound
+    float gain = 1.0f;
+    bool on = true;
 };
 
 // PORT: the game slows its own audio down (pitch + speed) during slow-motion
@@ -60,8 +75,20 @@ extern "C" float* PortSimTimeScalePtr(void);
 
 std::string g_sfxDir;
 bool g_haveDir = false;
-std::vector<std::pair<std::string, Clip>> g_clips; // small; linear lookup is fine
+// Keyed by file path. Clips are never freed, and live behind unique_ptr so a
+// Voice's pointer stays valid however many more get loaded.
+std::vector<std::pair<std::string, std::unique_ptr<Clip>>> g_clips; // small; linear lookup is fine
 Voice g_voices[kMaxVoices];
+// Guards g_voices between the game thread (Play) and the audio thread (Mix).
+std::mutex g_voiceLock;
+
+// sfx/sonidos.txt, by sound name; re-read whenever its contents change.
+std::unordered_map<std::string, Replacement> g_replacements;
+std::string g_configText;
+std::chrono::steady_clock::time_point g_nextConfigCheck;
+// The game's sound names by MusyX SFX id (from SebringSoundDefines), for the
+// generic replacement in PortCustomSFXReplace.
+std::vector<std::string> g_soundNames;
 
 bool ReadU32LE(FILE* f, uint32_t* out)
 {
@@ -240,19 +267,18 @@ bool LoadWav(const std::string& path, std::vector<int16_t>* out)
     return true;
 }
 
-Clip* FindOrLoad(const char* name)
+Clip* FindOrLoad(const std::string& path)
 {
     for (auto& kv : g_clips)
     {
-        if (kv.first == name)
-            return &kv.second;
+        if (kv.first == path)
+            return kv.second.get();
     }
-    g_clips.push_back({std::string(name), Clip{}});
-    Clip* c = &g_clips.back().second;
+    g_clips.push_back({path, std::unique_ptr<Clip>(new Clip())});
+    Clip* c = g_clips.back().second.get();
     if (!g_haveDir)
         return c;
 
-    const std::string path = g_sfxDir + "/" + name + ".wav";
     FILE* probe = std::fopen(path.c_str(), "rb");
     if (probe == nullptr)
         return c; // nothing dropped in for this sound: not an error
@@ -273,33 +299,142 @@ Clip* FindOrLoad(const char* name)
     return c;
 }
 
+std::string Trim(const std::string& text)
+{
+    size_t a = 0, b = text.size();
+    while (a < b && (text[a] == ' ' || text[a] == '\t' || text[a] == '\r' || text[a] == '\n'))
+        a++;
+    while (b > a && (text[b - 1] == ' ' || text[b - 1] == '\t' || text[b - 1] == '\r' || text[b - 1] == '\n'))
+        b--;
+    return text.substr(a, b - a);
+}
+
+// sfx/sonidos.txt, one replacement per line ('#' starts a comment):
+//   SOUND_NAME = file.wav, volume%, on|off
+// The volume (0-200, default 100) and on/off (default on) are optional.
+void ParseConfig(const std::string& text)
+{
+    g_replacements.clear();
+    size_t start = 0;
+    while (start < text.size())
+    {
+        size_t end = text.find('\n', start);
+        if (end == std::string::npos)
+            end = text.size();
+        std::string line = text.substr(start, end - start);
+        start = end + 1;
+        const size_t hash = line.find('#');
+        if (hash != std::string::npos)
+            line.resize(hash);
+        const size_t eq = line.find('=');
+        if (eq == std::string::npos)
+            continue;
+        const std::string name = Trim(line.substr(0, eq));
+        std::vector<std::string> fields;
+        std::string rest = line.substr(eq + 1);
+        size_t pos = 0;
+        for (;;)
+        {
+            const size_t comma = rest.find(',', pos);
+            fields.push_back(Trim(rest.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos)));
+            if (comma == std::string::npos)
+                break;
+            pos = comma + 1;
+        }
+        if (name.empty() || fields.empty() || fields[0].empty())
+            continue;
+        Replacement r;
+        r.file = fields[0];
+        if (fields.size() > 1 && !fields[1].empty())
+        {
+            float volume = (float)std::atof(fields[1].c_str());
+            if (volume < 0.0f) volume = 0.0f;
+            if (volume > 200.0f) volume = 200.0f;
+            r.gain = volume / 100.0f;
+        }
+        if (fields.size() > 2)
+            r.on = !(fields[2] == "off" || fields[2] == "OFF" || fields[2] == "0" || fields[2] == "no");
+        g_replacements[name] = r;
+    }
+}
+
+std::string ClipPath(const std::string& file)
+{
+    return g_sfxDir + "/" + file;
+}
+
+// Re-reads sfx/sonidos.txt at most once a second (it is tiny), and loads the
+// clips it names right away rather than on their first play.
+void RefreshConfig()
+{
+    if (!g_haveDir)
+        return;
+    const auto now = std::chrono::steady_clock::now();
+    if (now < g_nextConfigCheck)
+        return;
+    g_nextConfigCheck = now + std::chrono::seconds(1);
+
+    std::string text;
+    if (FILE* f = std::fopen((g_sfxDir + "/sonidos.txt").c_str(), "rb"))
+    {
+        char buf[4096];
+        size_t n;
+        while ((n = std::fread(buf, 1, sizeof buf, f)) > 0)
+            text.append(buf, n);
+        std::fclose(f);
+    }
+    if (text == g_configText)
+        return;
+    g_configText = text;
+    ParseConfig(text);
+    for (const auto& kv : g_replacements)
+        if (kv.second.on && kv.second.file != "-")
+            FindOrLoad(ClipPath(kv.second.file));
+}
+
+int StartClip(Clip* c, float minScale, float gain)
+{
+    if (c == nullptr || !c->exists)
+        return 0;
+
+    if (c->loaded && !c->samples.empty() && gain > 0.0f)
+    {
+        std::lock_guard<std::mutex> lock(g_voiceLock);
+        Voice* slot = &g_voices[0]; // all voices busy: steal slot 0 rather than drop the cue
+        for (auto& v : g_voices)
+        {
+            if (v.clip == nullptr)
+            {
+                slot = &v;
+                break;
+            }
+        }
+        slot->clip = c;
+        slot->framePos = 0.0;
+        slot->minScale = minScale;
+        slot->gain = gain;
+    }
+    return 1;
+}
+
 int PlayInternal(const char* name, float minScale)
 {
     if (name == nullptr || *name == '\0')
         return 0;
 
-    Clip* c = FindOrLoad(name);
-    if (c == nullptr || !c->exists)
-        return 0;
-
-    if (c->loaded && !c->samples.empty())
+    RefreshConfig();
+    auto it = g_replacements.find(name);
+    if (it != g_replacements.end())
     {
-        for (auto& v : g_voices)
-        {
-            if (v.clip == nullptr)
-            {
-                v.clip = c;
-                v.framePos = 0.0;
-                v.minScale = minScale;
-                return 1;
-            }
-        }
-        // All voices busy: steal the oldest-looking slot (index 0) rather than drop the cue.
-        g_voices[0].clip = c;
-        g_voices[0].framePos = 0.0;
-        g_voices[0].minScale = minScale;
+        // Listed in sonidos.txt: off means "use the game's own sound".
+        const Replacement& r = it->second;
+        if (!r.on)
+            return 0;
+        if (r.file == "-")
+            return 1;
+        return StartClip(FindOrLoad(ClipPath(r.file)), minScale, r.gain);
     }
-    return 1;
+    return StartClip(FindOrLoad(ClipPath(std::string(name) + ".wav")), minScale, 1.0f);
 }
 
 } // namespace
@@ -314,9 +449,50 @@ extern "C" void PortCustomSFXInit(void)
     }
     g_sfxDir = std::string(dir) + "/sfx";
     g_haveDir = true;
-    g_clips.clear();
     for (auto& v : g_voices)
         v.clip = nullptr;
+    g_nextConfigCheck = std::chrono::steady_clock::time_point();
+    RefreshConfig();
+}
+
+extern "C" void PortCustomSFXRegisterName(unsigned long sfxID, const char* name)
+{
+    if (name == nullptr || sfxID >= 0x10000)
+        return;
+    if (g_soundNames.size() <= sfxID)
+        g_soundNames.resize(sfxID + 1);
+    g_soundNames[sfxID] = name;
+}
+
+extern "C" void PortCustomSFXNamesReady(void)
+{
+    if (!g_haveDir)
+        return;
+    // The list of names sonidos.txt can use, for whoever is editing it (the
+    // companion app reads it for its picker). Missing sfx/ folder: nothing to do.
+    FILE* f = std::fopen((g_sfxDir + "/_lista_de_sonidos.txt").c_str(), "wb");
+    if (f == nullptr)
+        return;
+    for (const std::string& name : g_soundNames)
+        if (!name.empty())
+            std::fprintf(f, "%s\n", name.c_str());
+    std::fclose(f);
+}
+
+extern "C" int PortCustomSFXReplace(unsigned long sfxID)
+{
+    if (sfxID >= g_soundNames.size() || g_soundNames[sfxID].empty())
+        return 0;
+    RefreshConfig();
+    auto it = g_replacements.find(g_soundNames[sfxID]);
+    if (it == g_replacements.end() || !it->second.on)
+        return 0;
+    if (it->second.file == "-")
+        return 1;
+    Clip* c = FindOrLoad(ClipPath(it->second.file));
+    if (c == nullptr || !c->loaded)
+        return 0; // a file that isn't there or won't decode: keep the game's sound
+    return StartClip(c, kSlowMoFloor, it->second.gain);
 }
 
 extern "C" int PortCustomSFXPlay(const char* name)
@@ -346,6 +522,7 @@ extern "C" void PortCustomSFXMix(short* pcm, unsigned int frames)
     if (!(scale > 0.05f)) scale = 0.05f; // also catches NaN
     if (scale > 4.0f) scale = 4.0f;
 
+    std::lock_guard<std::mutex> lock(g_voiceLock);
     for (auto& v : g_voices)
     {
         if (v.clip == nullptr)
@@ -367,7 +544,7 @@ extern "C" void PortCustomSFXMix(short* pcm, unsigned int frames)
             {
                 const float a = (float)s[i0 * kMixChannels + ch];
                 const float b = (float)s[i1 * kMixChannels + ch];
-                const int32_t sample = (int32_t)(a + (b - a) * frac);
+                const int32_t sample = (int32_t)((a + (b - a) * frac) * v.gain);
                 const int32_t mixed = (int32_t)pcm[i * kMixChannels + ch] + sample;
                 int32_t clamped = mixed;
                 if (clamped > 32767) clamped = 32767;

@@ -8,6 +8,7 @@
 #include "Game/Sys/debug.h"
 #include "Game/Audio/AudioLoader.h"
 #include "types.h"
+#include "port/custom_sfx.h"
 #include <dolphin/ar.h>
 
 extern "C" u32 sndStackGetAvailableSampleMemory(unsigned long id);
@@ -261,6 +262,13 @@ void Update3DSFXEmitter(SFXEmitter* pSFXEmitter, const nlVector3& position, cons
  */
 unsigned long Add3DSFXEmitter(const EmitterStartInfo& info)
 {
+    // PORT: sfx/sonidos.txt may replace this sound. Not adding the emitter is safe: the game then
+    // sees it as inactive (sndCheckEmitter), as when MusyX has no voice free for it.
+    if (PortCustomSFXReplace(info.uSFXID))
+    {
+        return 0xFFFFFFFF;
+    }
+
     SND_FVECTOR svPos;
     SND_FVECTOR svDir;
     SFXEmitter* pSFXEmitter;
@@ -654,6 +662,12 @@ bool StopSFX(unsigned long uVoiceID)
  */
 unsigned long PlaySFX(const SFXStartInfo& info)
 {
+    // PORT: sfx/sonidos.txt may replace this sound.
+    if (PortCustomSFXReplace(info.uSFXID))
+    {
+        return 0xFFFFFFFF;
+    }
+
     const SFXStartInfo* pInfo = &info;
     u8 uVolume;
     u8 uPan;
