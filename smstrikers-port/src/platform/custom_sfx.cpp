@@ -483,6 +483,15 @@ extern "C" void PortCustomSFXNamesReady(void)
     std::fclose(f);
 }
 
+// Every captain's Super Strike / HyperStrike voice lines (SFXCHAR_<CAPTAIN>_EFFORTS_Windup_Super_01,
+// ..._Kick_Super_01, SFXCHAR_HyperStrike_*): a replacement for one plays at normal speed like the
+// lines PortCustomSFXPlayFixed plays, however slow the cinematic runs.
+static bool IsSuperStrikeLine(const std::string& name)
+{
+    return name.find("_Windup_Super_") != std::string::npos || name.find("_Kick_Super") != std::string::npos
+        || name.find("HyperStrike") != std::string::npos || name.find("_Hyper") != std::string::npos;
+}
+
 // The sound editor's preview requests: sfx/_preview.txt holds "<nonce> orig|custom <NAME>"; the
 // game plays it, deletes the request and answers in sfx/_preview_result.txt with "<nonce> <result>":
 // ok, noload (that sound's group isn't loaded right now - most are only during a match), nofile
@@ -555,7 +564,7 @@ extern "C" int PortCustomSFXReplace(unsigned long sfxID)
     Clip* c = FindOrLoad(ClipPath(it->second.file));
     if (c == nullptr || !c->loaded)
         return 0; // a file that isn't there or won't decode: keep the game's sound
-    return StartClip(c, kSlowMoFloor, it->second.gain);
+    return StartClip(c, IsSuperStrikeLine(g_soundNames[sfxID]) ? kVoiceLineMinScale : kSlowMoFloor, it->second.gain);
 }
 
 extern "C" int PortCustomSFXPlay(const char* name)
