@@ -1864,7 +1864,8 @@ void queue_scripted_commands(unsigned long frame)
 //   - a tag at the bottom centre (the game's scoreboard is at the top) with the challenge and an
 //     achievements counter, for the whole match;
 //   - under "Maldición Rotativa" only, a large notice in the middle for one second whenever it draws a
-//     new challenge (at kickoff and after every goal);
+//     new challenge (at kickoff and after every goal), and a longer one with the match's curse as each
+//     Challenge Super Bowser Cup match opens;
 //   - for the first seconds of a match, which two achievements are up; then a short notice above the
 //     tag when one is won or lost;
 //   - the full achievement list, with progress, while the pause menu is open.
@@ -2033,6 +2034,7 @@ static void DrawChallengeBanner(void)
     static bool s_inMatch = false;
     static int s_shownChallenge = PORT_CHALLENGE_NONE;
     static double s_curseNoticeUntil = 0.0;
+    static bool s_curseNoticeCup = false;
     static double s_achIntroUntil = 0.0;
     static const char* s_achNames[2] = { nullptr, nullptr };
     static int s_achStates[2] = { PORT_ACH_PENDING, PORT_ACH_PENDING };
@@ -2136,10 +2138,18 @@ static void DrawChallengeBanner(void)
 
     const int active = PortModChallengeGetActive();
     const bool rotating = PortModChallengeGetSelected() == PORT_CHALLENGE_ROTATING_CURSE;
+    const bool cupCurse = PortChallengeCupCurse() != PORT_CHALLENGE_NONE;
     if (active != s_shownChallenge)
     {
+        // A Challenge Super Bowser Cup match opens with its curse, a little longer than a rotating draw.
+        s_curseNoticeCup = cupCurse && s_shownChallenge == PORT_CHALLENGE_NONE;
         s_shownChallenge = active;
-        s_curseNoticeUntil = (rotating && active != PORT_CHALLENGE_NONE) ? now + 1.0 : 0.0;
+        if (active == PORT_CHALLENGE_NONE)
+            s_curseNoticeUntil = 0.0;
+        else if (s_curseNoticeCup)
+            s_curseNoticeUntil = now + 3.5;
+        else
+            s_curseNoticeUntil = rotating ? now + 1.0 : 0.0;
     }
 
     if (active == PORT_CHALLENGE_NONE && achCount == 0 && now >= s_varUntil)
@@ -2158,7 +2168,8 @@ static void DrawChallengeBanner(void)
         bool bFirst = true;
         if (active != PORT_CHALLENGE_NONE)
         {
-            ImGui::TextColored(kGold, rotating ? "Maldición Rotativa: %s" : "Reto: %s", PortModChallengeName(active));
+            ImGui::TextColored(kGold, rotating ? "Maldición Rotativa: %s" : (cupCurse ? "Challenge Cup: %s" : "Reto: %s"),
+                               PortModChallengeName(active));
             bFirst = false;
         }
         if (achCount > 0)
@@ -2252,7 +2263,7 @@ static void DrawChallengeBanner(void)
         ImGui::PopStyleVar();
     }
 
-    // "Maldición Rotativa" only: one second in the middle of the screen for each new draw.
+    // "Maldición Rotativa" (one second for each new draw) and the Challenge cup's curse as a match opens.
     if (now < s_curseNoticeUntil)
     {
         const float left = (float)(s_curseNoticeUntil - now);
@@ -2263,7 +2274,8 @@ static void DrawChallengeBanner(void)
         if (ImGui::Begin("##challenge_notice", nullptr, kBannerFlags))
         {
             ImGui::SetWindowFontScale(2.0f * scale);
-            ImGui::TextUnformatted("¡NUEVA MALDICIÓN!");
+            ImGui::TextUnformatted(s_curseNoticeCup ? "CHALLENGE SUPER BOWSER CUP  ·  Maldición del partido"
+                                                    : "¡NUEVA MALDICIÓN!");
             ImGui::SetWindowFontScale(3.0f * scale);
             ImGui::TextColored(kGold, "%s", PortModChallengeName(active));
         }

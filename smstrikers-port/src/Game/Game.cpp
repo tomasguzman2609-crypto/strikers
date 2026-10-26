@@ -483,6 +483,15 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
     PortJogoBonitoReset();
     // PORT: challenge roulette - "Refuerzos" sets its bench up again once play starts.
     PortReinforcementsReset();
+    // PORT: challenge roulette - a Challenge Super Bowser Cup match plays under the round's curse
+    // (drawn once per round, so replaying the match keeps it), ahead of the challenge.txt one.
+    {
+        GameInfoManager* pInfo = nlSingleton<GameInfoManager>::Instance();
+        BaseCup* pCup = pInfo->GetCurrentCup();
+        const bool bSuperBowser = pInfo->GetCurrentMode() == GameInfoManager::GM_SUPER_BOWSER_CUP && pCup != NULL;
+        const int nRoundKey = bSuperBowser ? (pInfo->mDoingKnockout ? 10000 : 0) + (int)pCup->mRoundNumber : 0;
+        PortChallengeCupBeginMatch(bSuperBowser ? 1 : 0, nRoundKey);
+    }
     // PORT: challenge roulette - "Maldición Rotativa" draws a fresh challenge for each new match.
     PortModChallengeReroll();
     // PORT: challenge roulette - this match's two achievements, and tell the companion app a match

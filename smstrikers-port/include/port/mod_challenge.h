@@ -191,6 +191,20 @@ int PortModChallengeActionBlocked(int padIndex, int action);
 // "rival_sidekicks": "Compañeros únicos rival" (see Game/RivalSidekicks.h). Non-zero when on.
 int PortModExtraRivalSidekicks(void);
 
+// Challenge Super Bowser Cup: the Super Bowser Cup played with a curse drawn for every match (from
+// the pool in mod_challenge.cpp; never the previous match's, and each one's chance halves every
+// time it comes up). It shares the Super Bowser Cup's save slot; mods/challenge_cup.txt remembers
+// which kind the cup in progress is.
+//   - PortChallengeCupIsActive: non-zero when the Super Bowser Cup in progress is the challenge kind.
+//   - PortChallengeCupStart: a new Super Bowser Cup is starting, the challenge kind or not.
+//   - PortChallengeCupBeginMatch: a match begins; in a challenge cup it draws the round's curse (or
+//     keeps the one this round already drew), which then overrides challenge.txt for the match.
+//   - PortChallengeCupCurse: that curse, PORT_CHALLENGE_NONE outside a challenge cup match.
+int PortChallengeCupIsActive(void);
+void PortChallengeCupStart(int challenge);
+void PortChallengeCupBeginMatch(int inSuperBowserCup, int roundKey);
+int PortChallengeCupCurse(void);
+
 // Resets the active challenge to PORT_CHALLENGE_NONE, both in memory and by rewriting
 // challenge.txt, so the companion app can tell the match ended and offer another spin. Call this
 // exactly once per match end (not every frame).

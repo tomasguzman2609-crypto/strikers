@@ -7,8 +7,26 @@
 #include "NL/nlFormat.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlBind.h"
+#include "port/mod_challenge.h"
 
 unsigned long GetLOCCharacterName(eTeamID, bool, bool);
+
+// PORT: challenge roulette - the super cup carousel has one more stop after the Super Bowser Cup:
+// the Challenge Super Bowser Cup, the same cup (trophy, teams, save slot) with a curse every match.
+// While it is the one on show, mCupToDisplay stays TROPHY_SUPER_BOWSER_CUP and this is set.
+static bool s_portChallengeSlot = false;
+
+static const unsigned short* const kPortChallengeCupTitle = (const unsigned short*)L"CHALLENGE SUPER BOWSER CUP";
+static const unsigned short* const kPortChallengeCupDescriptor =
+    (const unsigned short*)L"La Super Bowser Cup con una maldici\u00F3n al azar en cada partido. "
+                           L"Nunca se repite la del partido anterior. \u00A1Sobrevive y lev\u00E1ntala!";
+
+// Starting a new Super Bowser Cup: remember whether it is the challenge kind.
+static inline void PortNoteNewCup()
+{
+    if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP)
+        PortChallengeCupStart(s_portChallengeSlot ? 1 : 0);
+}
 
 static inline const unsigned short* LookupLocString(const char* id)
 {
@@ -59,6 +77,7 @@ void confirmedNewCup(bool isSuperCup)
 
     BaseCup* cup = nlSingleton<GameInfoManager>::Instance()->mCurrentCup;
     cup->mCupStarted = false;
+    PortNoteNewCup();
 
     GameInfoManager* gim2 = nlSingleton<GameInfoManager>::s_pInstance;
     cup->mCupSettings.SkillLevel = gim2->mUserInfo.mGameplayOptions.SkillLevel;
@@ -131,6 +150,7 @@ ChooseCupSceneV2::ChooseCupSceneV2(bool isSuperCup)
     mCupInProgressDirty = false;
 
     mCupImage = new ((AsyncImage*)nlMalloc(sizeof(AsyncImage), 0x20, true)) AsyncImage(TROPHY_FILE_NAME, NULL);
+    s_portChallengeSlot = false;
 
     if (mIsSuperCup)
     {
@@ -427,9 +447,15 @@ void ChooseCupSceneV2::Update(float fDeltaT)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0x0B, true, NULL))
     {
-        if (mCupToDisplay == mMinCup)
+        if (s_portChallengeSlot)
+        {
+            // PORT: back from the Challenge cup to the plain Super Bowser Cup.
+            s_portChallengeSlot = false;
+        }
+        else if (mCupToDisplay == mMinCup)
         {
             mCupToDisplay = mMaxCup;
+            s_portChallengeSlot = mIsSuperCup;
         }
         else
         {
@@ -528,9 +554,15 @@ void ChooseCupSceneV2::Update(float fDeltaT)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0x0C, true, NULL))
     {
-        if (mCupToDisplay == mMaxCup)
+        if (mIsSuperCup && mCupToDisplay == mMaxCup && !s_portChallengeSlot)
+        {
+            // PORT: past the Super Bowser Cup comes the Challenge cup.
+            s_portChallengeSlot = true;
+        }
+        else if (mCupToDisplay == mMaxCup)
         {
             mCupToDisplay = mMinCup;
+            s_portChallengeSlot = false;
         }
         else
         {
@@ -687,6 +719,8 @@ void ChooseCupSceneV2::DisplayCup()
 
     pText->m_LocStrId = GetLOCTrophyName(mCupToDisplay);
     pText->m_OverloadFlags |= 0x8;
+    if (s_portChallengeSlot)
+        pText->SetString(kPortChallengeCupTitle);
 
     mCupImage->QueueLoad(TROPHY_TEXTURE_FILENAMES[(int)mCupToDisplay], false);
 
@@ -727,7 +761,7 @@ void ChooseCupSceneV2::DisplayCup()
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("DESCRIPTOR")));
 
-        pText->SetString(mDescriptorBuffer);
+        pText->SetString(s_portChallengeSlot ? kPortChallengeCupDescriptor : mDescriptorBuffer);
 
         nlColour trophyColour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
         pTrophyImage->SetAssetColour(trophyColour);
@@ -792,7 +826,11 @@ void ChooseCupSceneV2::DisplayCup()
     }
 
     BaseCup* cup = nlSingleton<GameInfoManager>::Instance()->GetCup(cupMode);
-    if (cup->mCupStarted)
+    // PORT: the two Super Bowser Cups share a save slot; each only shows the run that is its own,
+    // and the Challenge one shows no past champion.
+    const bool bPortOtherKind = cupMode == GameInfoManager::GM_SUPER_BOWSER_CUP
+                             && (PortChallengeCupIsActive() != 0) != s_portChallengeSlot;
+    if (cup->mCupStarted && !bPortOtherKind)
     {
         progressComp->m_bVisible = true;
 
@@ -808,7 +846,7 @@ void ChooseCupSceneV2::DisplayCup()
         UserInfo* userInfo = &nlSingleton<GameInfoManager>::Instance()->mUserInfo;
         Spoil cupSpoil = userInfo->mSpoils[(int)mCupToDisplay];
 
-        if (cupSpoil.mCurrentChamp == TEAM_INVALID)
+        if (cupSpoil.mCurrentChamp == TEAM_INVALID || s_portChallengeSlot)
         {
             progressComp->m_bVisible = false;
         }
@@ -909,12 +947,22 @@ void ChooseCupSceneV2::Proceed()
     GameInfoManager* gim = nlSingleton<GameInfoManager>::s_pInstance;
     BaseCup* cup = gim->mCurrentCup;
 
+    // PORT: a Super Bowser Cup of the other kind in progress can't be continued from here, only
+    // overwritten (the game's own "really overwrite?" question).
+    if (cup->mCupStarted && gim->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP
+        && (PortChallengeCupIsActive() != 0) != s_portChallengeSlot)
+    {
+        startNewCup(mIsSuperCup);
+        return;
+    }
+
     if (!cup->mCupStarted)
     {
         bool isSuperCup = ProceedCupMode(mIsSuperCup);
 
         cup = nlSingleton<GameInfoManager>::Instance()->mCurrentCup;
         cup->mCupStarted = false;
+        PortNoteNewCup();
 
         GameInfoManager* gim2 = nlSingleton<GameInfoManager>::s_pInstance;
         cup->mCupSettings.SkillLevel = gim2->mUserInfo.mGameplayOptions.SkillLevel;
