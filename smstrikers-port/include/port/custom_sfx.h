@@ -56,6 +56,11 @@ void PortCustomSFXNamesReady(void);
 // Replacements play unpositioned, at their own volume.
 int PortCustomSFXReplace(unsigned long sfxID);
 
+// Answers the sound editor's preview requests (sfx/_preview.txt: play a game
+// sound as it really is, or its assigned clip at its volume). Cheap; call once
+// per frame from the main thread.
+void PortCustomSFXPoll(void);
+
 // Adds any currently-playing custom clips into `pcm` (interleaved, signed
 // 16-bit, stereo, `frames` sample pairs), with saturation. Called once per
 // audio buffer from the platform audio backend, after MusyX has rendered it.

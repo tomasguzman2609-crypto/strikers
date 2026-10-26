@@ -12,6 +12,7 @@
 #include "port/input.h"
 #include "port/launch.h"
 #include "port/mod_challenge.h"
+#include "port/custom_sfx.h"
 #include "port/achievements.h"
 #include "port/texture_packs.h"
 
@@ -2295,6 +2296,8 @@ void PortOverlayDraw(void)
     // STRIKERS_CONTROL, polled here because this runs every frame before the STRIKERS_OVERLAY test
     // and inside Aurora's frame, which is where shot has to ask for its readback.
     PortControlPoll();
+    // The sound editor's previews, answered in menus and matches alike.
+    PortCustomSFXPoll();
     DrawChallengeBanner();
     const bool menu = s_menuOpen;
     if (!menu && !s_enabled)

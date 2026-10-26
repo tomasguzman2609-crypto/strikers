@@ -73,6 +73,10 @@ struct Replacement
 // during slow-mo.
 extern "C" float* PortSimTimeScalePtr(void);
 
+// MusyX's own start call (snd_synthapi.c), for previewing a game sound as it
+// really is, past PortCustomSFXReplace.
+extern "C" uint32_t sndFXStartEx(uint16_t fid, uint8_t vol, uint8_t pan, uint8_t studio);
+
 std::string g_sfxDir;
 bool g_haveDir = false;
 // Keyed by file path. Clips are never freed, and live behind unique_ptr so a
@@ -477,6 +481,65 @@ extern "C" void PortCustomSFXNamesReady(void)
         if (!name.empty())
             std::fprintf(f, "%s\n", name.c_str());
     std::fclose(f);
+}
+
+// The sound editor's preview requests: sfx/_preview.txt holds "<nonce> orig|custom <NAME>"; the
+// game plays it, deletes the request and answers in sfx/_preview_result.txt with "<nonce> <result>":
+// ok, noload (that sound's group isn't loaded right now - most are only during a match), nofile
+// (no .wav assigned, or it doesn't decode) or unknown (no such sound name).
+static std::chrono::steady_clock::time_point g_nextPreviewCheck;
+
+static const char* Preview(const std::string& kind, const std::string& name)
+{
+    if (kind == "orig")
+    {
+        for (size_t id = 0; id < g_soundNames.size(); id++)
+        {
+            if (g_soundNames[id] != name)
+                continue;
+            return sndFXStartEx((uint16_t)id, 127, 64, 0) != 0xFFFFFFFFu ? "ok" : "noload";
+        }
+        return "unknown";
+    }
+    RefreshConfig();
+    auto it = g_replacements.find(name);
+    if (it == g_replacements.end() || it->second.file == "-")
+        return "nofile";
+    Clip* c = FindOrLoad(ClipPath(it->second.file));
+    if (c == nullptr || !c->loaded)
+        return "nofile";
+    StartClip(c, kVoiceLineMinScale, it->second.gain);
+    return "ok";
+}
+
+extern "C" void PortCustomSFXPoll(void)
+{
+    if (!g_haveDir)
+        return;
+    const auto now = std::chrono::steady_clock::now();
+    if (now < g_nextPreviewCheck)
+        return;
+    g_nextPreviewCheck = now + std::chrono::milliseconds(150);
+
+    const std::string path = g_sfxDir + "/_preview.txt";
+    FILE* f = std::fopen(path.c_str(), "rb");
+    if (f == nullptr)
+        return;
+    char buf[256];
+    const size_t n = std::fread(buf, 1, sizeof buf - 1, f);
+    std::fclose(f);
+    buf[n] = '\0';
+    std::remove(path.c_str());
+
+    char nonce[64], kind[16], name[160];
+    if (std::sscanf(buf, "%63s %15s %159s", nonce, kind, name) != 3)
+        return;
+    const char* result = Preview(kind, name);
+    if (FILE* out = std::fopen((g_sfxDir + "/_preview_result.txt").c_str(), "wb"))
+    {
+        std::fprintf(out, "%s %s\n", nonce, result);
+        std::fclose(out);
+    }
 }
 
 extern "C" int PortCustomSFXReplace(unsigned long sfxID)
