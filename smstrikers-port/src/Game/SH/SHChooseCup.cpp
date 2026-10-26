@@ -20,6 +20,23 @@ static const unsigned short* const kPortChallengeCupTitle = (const unsigned shor
 static const unsigned short* const kPortChallengeCupDescriptor =
     (const unsigned short*)L"La Super Bowser Cup con una maldici\u00F3n al azar en cada partido. "
                            L"Nunca se repite la del partido anterior. \u00A1Sobrevive y lev\u00E1ntala!";
+static const unsigned short* const kPortSidekicksOn =
+    (const unsigned short*)L" Compa\u00F1eros \u00FAnicos rival: S\u00CD (X para cambiar)";
+static const unsigned short* const kPortSidekicksOff =
+    (const unsigned short*)L" Compa\u00F1eros \u00FAnicos rival: NO (X para cambiar)";
+
+// The Challenge cup's description plus the state of its "Compañeros únicos rival" switch.
+static const unsigned short* PortChallengeCupDescriptor()
+{
+    static unsigned short s_buffer[256];
+    int n = 0;
+    for (const unsigned short* p = kPortChallengeCupDescriptor; *p != 0 && n < 255; p++)
+        s_buffer[n++] = *p;
+    for (const unsigned short* p = PortChallengeCupSidekicks() ? kPortSidekicksOn : kPortSidekicksOff; *p != 0 && n < 255; p++)
+        s_buffer[n++] = *p;
+    s_buffer[n] = 0;
+    return s_buffer;
+}
 
 // Starting a new Super Bowser Cup: remember whether it is the challenge kind.
 static inline void PortNoteNewCup()
@@ -437,6 +454,20 @@ void ChooseCupSceneV2::Update(float fDeltaT)
         return;
     }
 
+    // PORT: X on the Challenge cup flips its "Compañeros únicos rival" switch.
+    if (s_portChallengeSlot && g_pFEInput->JustPressed(FE_ALL_PADS, 0x400, false, NULL))
+    {
+        PortChallengeCupSetSidekicks(PortChallengeCupSidekicks() ? 0 : 1);
+        FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+        TLTextInstance* pDescriptor = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            activeSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("DESCRIPTOR")));
+        if (pDescriptor != NULL)
+            pDescriptor->SetString(PortChallengeCupDescriptor());
+        return;
+    }
+
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
     {
         nlSingleton<GameSceneManager>::Instance()->PopEntireStack();
@@ -761,7 +792,7 @@ void ChooseCupSceneV2::DisplayCup()
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("DESCRIPTOR")));
 
-        pText->SetString(s_portChallengeSlot ? kPortChallengeCupDescriptor : mDescriptorBuffer);
+        pText->SetString(s_portChallengeSlot ? PortChallengeCupDescriptor() : mDescriptorBuffer);
 
         nlColour trophyColour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
         pTrophyImage->SetAssetColour(trophyColour);

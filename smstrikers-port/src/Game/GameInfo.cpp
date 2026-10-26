@@ -1,6 +1,7 @@
 #include "NL/nlLexicalCast.h"
 #include "Game/GameInfo.h"
 #include "port/overlay.h"
+#include "port/mod_challenge.h"
 #include <stdlib.h>
 #include "NL/nlString.h"
 #include "NL/nlDebug.h"
@@ -1748,6 +1749,13 @@ void GameInfoManager::IncreaseRoundNumber()
     }
 
     mCurrentCup->mGameNumber = 0;
+
+    // PORT: challenge roulette - the Super Bowser Cup's knockout is over (final played, or the user
+    // is out): a Challenge Super Bowser Cup has no next curse left to line up.
+    if (mCurrentMode == GM_SUPER_BOWSER_CUP && mDoingKnockout && mCurrentCup->mRoundNumber == -5)
+    {
+        PortChallengeCupEnd();
+    }
 }
 
 /**

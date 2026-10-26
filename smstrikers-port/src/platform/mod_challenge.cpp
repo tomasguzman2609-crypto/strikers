@@ -31,6 +31,8 @@ PortModChallengeActionFilter g_actionFilter = nullptr;
 // The Challenge Super Bowser Cup's curse for the match being played (PORT_CHALLENGE_NONE outside
 // one). While set, it stands in for whatever challenge.txt selects.
 int g_cupCurse = PORT_CHALLENGE_NONE;
+// And whether that match has the cup's "Compañeros únicos rival" switch on.
+bool g_cupSidekicksThisMatch = false;
 
 // What PORT_CHALLENGE_ROTATING_CURSE has currently drawn (PORT_CHALLENGE_NONE when it isn't active).
 int g_rotatingDraw = PORT_CHALLENGE_NONE;
@@ -195,7 +197,7 @@ static void ReadExtras(void)
 
 extern "C" int PortModExtraRivalSidekicks(void)
 {
-    return g_extraRivalSidekicks;
+    return (g_extraRivalSidekicks || g_cupSidekicksThisMatch) ? 1 : 0;
 }
 
 extern "C" void PortModChallengeUpdate(void)
@@ -339,6 +341,7 @@ extern "C" int PortModChallengeActionBlocked(int padIndex, int action)
 extern "C" void PortModChallengeClear(void)
 {
     g_cupCurse = PORT_CHALLENGE_NONE;
+    g_cupSidekicksThisMatch = false;
     g_activeChallenge = PORT_CHALLENGE_NONE;
     g_rotatingDraw = PORT_CHALLENGE_NONE;
     g_lastContent = "0";
@@ -350,13 +353,17 @@ extern "C" void PortModChallengeClear(void)
 //
 // mods/challenge_cup.txt remembers, across sessions, whether the Super Bowser Cup in progress is the
 // challenge kind, which curse the current round drew (so quitting and replaying a match can't
-// re-roll it), the last curse drawn, and how often each curse has come up this cup:
-//   active=0/1, round=<key>, curse=<id>, last=<id>, used<id>=<count>
+// re-roll it), the curse lined up for the next match, the last curse played, how often each curse
+// has come up this cup, and the cup's "Compañeros únicos rival" switch:
+//   active=0/1, round=<key>, curse=<id>, pending=<id>, last=<id>, sidekicks=0/1, used<id>=<count>
+// The companion app reads it too, and may rewrite pending= between matches to spend a roulette
+// skip, so the game re-reads it before every use rather than keeping its own copy.
 
 namespace
 {
 
-// The curses this cup draws from: every challenge except 1, 2, 8, 11, 12, 14 and 19.
+// The curses this cup draws from: every challenge except 1, 2, 8, 11, 12, 14 and 19 (the companion
+// app's skip keeps its own copy of this list).
 const int kCupPool[] = { 3, 4, 5, 6, 7, 9, 10, 13, 15, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 };
 constexpr int kCupPoolSize = (int)(sizeof kCupPool / sizeof kCupPool[0]);
 
@@ -365,12 +372,21 @@ struct CupState
     int active = 0;
     int round = -1000000;
     int curse = PORT_CHALLENGE_NONE;
+    int pending = PORT_CHALLENGE_NONE;
     int last = PORT_CHALLENGE_NONE;
+    int sidekicks = 0;
     int used[PORT_CHALLENGE_COUNT] = {};
 };
 
 CupState g_cup;
-bool g_cupLoaded = false;
+
+bool InCupPool(int id)
+{
+    for (int i = 0; i < kCupPoolSize; i++)
+        if (kCupPool[i] == id)
+            return true;
+    return false;
+}
 
 std::string CupPath()
 {
@@ -379,12 +395,12 @@ std::string CupPath()
 
 void LoadCup()
 {
-    if (g_cupLoaded || !g_havePath)
+    if (!g_havePath)
         return;
-    g_cupLoaded = true;
     FILE* f = fopen(CupPath().c_str(), "rb");
     if (f == nullptr)
-        return;
+        return; // keep what is in memory
+    g_cup = CupState();
     char line[64];
     while (fgets(line, sizeof line, f) != nullptr)
     {
@@ -400,8 +416,12 @@ void LoadCup()
             g_cup.round = value;
         else if (sscanf(line, "curse=%d", &value) == 1)
             g_cup.curse = value;
+        else if (sscanf(line, "pending=%d", &value) == 1)
+            g_cup.pending = value;
         else if (sscanf(line, "last=%d", &value) == 1)
             g_cup.last = value;
+        else if (sscanf(line, "sidekicks=%d", &value) == 1)
+            g_cup.sidekicks = value != 0 ? 1 : 0;
     }
     fclose(f);
 }
@@ -413,16 +433,17 @@ void SaveCup()
     FILE* f = fopen(CupPath().c_str(), "wb");
     if (f == nullptr)
         return;
-    fprintf(f, "active=%d\nround=%d\ncurse=%d\nlast=%d\n", g_cup.active, g_cup.round, g_cup.curse, g_cup.last);
+    fprintf(f, "active=%d\nround=%d\ncurse=%d\npending=%d\nlast=%d\nsidekicks=%d\n", g_cup.active, g_cup.round,
+            g_cup.curse, g_cup.pending, g_cup.last, g_cup.sidekicks);
     for (int id = PORT_CHALLENGE_NONE + 1; id < PORT_CHALLENGE_COUNT; id++)
         if (g_cup.used[id] > 0)
             fprintf(f, "used%d=%d\n", id, g_cup.used[id]);
     fclose(f);
 }
 
-// Never the previous match's curse; otherwise every curse can come up, but each time one does its
-// chance halves for the rest of the cup.
-int DrawCupCurse()
+// Never `exclude` (the curse the next match would follow); otherwise every curse can come up, but
+// each time one does its chance halves for the rest of the cup.
+int DrawCupCurse(int exclude)
 {
     double weights[kCupPoolSize];
     double total = 0.0;
@@ -430,7 +451,7 @@ int DrawCupCurse()
     {
         const int id = kCupPool[i];
         const int uses = g_cup.used[id] < 30 ? g_cup.used[id] : 30;
-        weights[i] = id == g_cup.last ? 0.0 : 1.0 / (double)(1u << uses);
+        weights[i] = id == exclude ? 0.0 : 1.0 / (double)(1u << uses);
         total += weights[i];
     }
     double roll = (double)(NextRandom() & 0xFFFFFF) / (double)0x1000000 * total;
@@ -459,8 +480,23 @@ extern "C" int PortChallengeCupIsActive(void)
 extern "C" void PortChallengeCupStart(int challenge)
 {
     LoadCup();
+    const int sidekicks = g_cup.sidekicks;
     g_cup = CupState();
+    g_cup.sidekicks = sidekicks;
     g_cup.active = challenge != 0 ? 1 : 0;
+    // The first match's curse is drawn up front, so the companion app can show it (and skip it).
+    if (g_cup.active)
+        g_cup.pending = DrawCupCurse(PORT_CHALLENGE_NONE);
+    SaveCup();
+}
+
+extern "C" void PortChallengeCupEnd(void)
+{
+    LoadCup();
+    if (!g_cup.active)
+        return;
+    g_cup.active = 0;
+    g_cup.pending = PORT_CHALLENGE_NONE;
     SaveCup();
 }
 
@@ -468,17 +504,22 @@ extern "C" void PortChallengeCupBeginMatch(int inSuperBowserCup, int roundKey)
 {
     LoadCup();
     g_cupCurse = PORT_CHALLENGE_NONE;
+    g_cupSidekicksThisMatch = false;
     if (inSuperBowserCup && g_cup.active)
     {
-        if (roundKey != g_cup.round || g_cup.curse <= PORT_CHALLENGE_NONE || g_cup.curse >= PORT_CHALLENGE_COUNT)
+        if (roundKey != g_cup.round || !InCupPool(g_cup.curse))
         {
-            g_cup.curse = DrawCupCurse();
+            g_cup.curse = InCupPool(g_cup.pending) && g_cup.pending != g_cup.last ? g_cup.pending
+                                                                                  : DrawCupCurse(g_cup.last);
             g_cup.round = roundKey;
             g_cup.last = g_cup.curse;
             g_cup.used[g_cup.curse]++;
+            // Line up the next match's curse now, so it can be seen (and skipped) between matches.
+            g_cup.pending = DrawCupCurse(g_cup.curse);
             SaveCup();
         }
         g_cupCurse = g_cup.curse;
+        g_cupSidekicksThisMatch = g_cup.sidekicks != 0;
     }
     // The rotating draw follows whichever selection now applies.
     if (EffectiveSelected() == PORT_CHALLENGE_ROTATING_CURSE)
@@ -493,4 +534,17 @@ extern "C" void PortChallengeCupBeginMatch(int inSuperBowserCup, int roundKey)
 extern "C" int PortChallengeCupCurse(void)
 {
     return g_cupCurse;
+}
+
+extern "C" int PortChallengeCupSidekicks(void)
+{
+    LoadCup();
+    return g_cup.sidekicks;
+}
+
+extern "C" void PortChallengeCupSetSidekicks(int on)
+{
+    LoadCup();
+    g_cup.sidekicks = on != 0 ? 1 : 0;
+    SaveCup();
 }
