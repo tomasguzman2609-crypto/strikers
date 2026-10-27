@@ -4,7 +4,6 @@
 #include "port/host.h"
 
 #include <chrono>
-#include <filesystem>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -14,6 +13,12 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#if defined(_WIN32)
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#endif
 
 namespace
 {
@@ -780,8 +785,12 @@ extern "C" int PortCustomSFXDumpRequested(void)
 extern "C" void PortCustomSFXDumpBegin(void)
 {
     g_dumpDir = g_sfxDir + "/_originales";
-    std::error_code ec;
-    std::filesystem::create_directories(g_dumpDir, ec);
+    // sfx/ itself is there (g_haveDir); an existing _originales/ is fine.
+#if defined(_WIN32)
+    _mkdir(g_dumpDir.c_str());
+#else
+    mkdir(g_dumpDir.c_str(), 0755);
+#endif
     g_dumped.assign(g_soundNames.size(), false);
     g_dumpCount = 0;
     sndMasterVolume(127, 0, 1, 1); // whatever the options menu set, record at full level
