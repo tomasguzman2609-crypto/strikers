@@ -1,5 +1,6 @@
 #include "port/custom_sfx.h"
 #include <string.h>
+#include <stdlib.h>
 #include "NL/nlAVLTree.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/AudioStream.h"
@@ -2320,4 +2321,39 @@ void AudioLoader::InitCrowdFromStateTransition()
     Audio::ResetPauseStatus();
     nlSingleton<GameInfoManager>::Instance()->GetAudioOptions();
     CrowdMood::SetCrowdVolume(0x7f, 0);
+}
+
+/**
+ * PORT: the sound editor's "Extraer sonidos originales" (see PortCustomSFXDumpBegin). Run straight
+ * after start-up with STRIKERS_DUMP_SFX set: records every sound of every sound group into
+ * sfx/_originales/, loading each group on its own on stack 1, then quits the game.
+ */
+void PortSFXDumpIfRequested()
+{
+    if (!PortCustomSFXDumpRequested() || AudioLoader::gbDisableAudio || !Audio::IsInited())
+    {
+        return;
+    }
+
+    AudioFileData& data = AudioLoader::sebringAudioFileData;
+    PortCustomSFXDumpBegin();
+
+    // What start-up already loaded first, then every other group alone on an emptied stack 1.
+    PlatAudio::UnloadAllSoundGroupsOnStack(data, 1);
+    PortCustomSFXDumpLoaded();
+    for (int i = 0; i < data.numSoundGroups; i++)
+    {
+        if (data.soundGroups[i].stackEnum != -1)
+        {
+            continue;
+        }
+        if (PlatAudio::LoadSoundGroup(data, i, 1, true))
+        {
+            PortCustomSFXDumpLoaded();
+            PlatAudio::UnloadAllSoundGroupsOnStack(data, 1);
+        }
+    }
+
+    PortCustomSFXDumpEnd();
+    exit(0);
 }

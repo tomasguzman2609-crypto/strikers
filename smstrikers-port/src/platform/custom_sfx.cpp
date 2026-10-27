@@ -4,6 +4,7 @@
 #include "port/host.h"
 
 #include <chrono>
+#include <filesystem>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -76,6 +77,12 @@ extern "C" float* PortSimTimeScalePtr(void);
 // MusyX's own start call (snd_synthapi.c), for previewing a game sound as it
 // really is, past PortCustomSFXReplace.
 extern "C" uint32_t sndFXStartEx(uint16_t fid, uint8_t vol, uint8_t pan, uint8_t studio);
+extern "C" uint32_t sndFXCheck(uint32_t vid);
+extern "C" unsigned long sndFXKeyOff(uint32_t vid);
+extern "C" void sndMasterVolume(uint8_t volume, uint16_t time, uint8_t music, uint8_t fx);
+// hw_pc.c: runs the whole engine for one 5 ms tick and returns that tick's stereo s16 buffer.
+extern "C" void* salPortNextBuffer(void);
+extern "C" unsigned int salPortBufferBytes(void);
 
 std::string g_sfxDir;
 bool g_haveDir = false;
@@ -628,4 +635,177 @@ extern "C" void PortCustomSFXMix(short* pcm, unsigned int frames)
         if (v.framePos >= (double)total)
             v.clip = nullptr; // done
     }
+}
+
+// ---- Extracting the game's own sounds (STRIKERS_DUMP_SFX) ----
+//
+// The sound editor's "Extraer sonidos originales": the game is started once with STRIKERS_DUMP_SFX
+// set, loads its sound groups one after another (AudioLoader's PortSFXDumpIfRequested), and for
+// each group renders every sound it holds on its own, by driving MusyX tick by tick rather than
+// through the audio device, into sfx/_originales/<NAME>.wav. The editor then plays those directly.
+
+namespace
+{
+
+std::vector<bool> g_dumped;
+std::string g_dumpDir;
+int g_dumpCount = 0;
+
+constexpr uint32_t kNoVoice = 0xFFFFFFFFu;
+constexpr int kTicksPerSecond = 200; // 5 ms ticks
+constexpr int kMaxSoundTicks = 8 * kTicksPerSecond; // looping sounds get cut here
+constexpr int kTailTicks = 30; // the voice ends a little before its last audio leaves the buffers
+
+bool IsSilent(const int16_t* pcm, size_t samples)
+{
+    for (size_t i = 0; i < samples; i++)
+        if (pcm[i] > 8 || pcm[i] < -8)
+            return false;
+    return true;
+}
+
+// Runs MusyX until its output has been silent for a few ticks, so one sound's tail doesn't end up
+// at the start of the next.
+void Drain()
+{
+    const size_t samples = salPortBufferBytes() / sizeof(int16_t);
+    int quiet = 0;
+    for (int t = 0; t < 2 * kTicksPerSecond && quiet < 4; t++)
+    {
+        const int16_t* buf = (const int16_t*)salPortNextBuffer();
+        quiet = (buf == nullptr || IsSilent(buf, samples)) ? quiet + 1 : 0;
+    }
+}
+
+bool WriteWav(const std::string& path, const std::vector<int16_t>& pcm)
+{
+    FILE* f = std::fopen(path.c_str(), "wb");
+    if (f == nullptr)
+        return false;
+    auto u32 = [f](uint32_t v) {
+        unsigned char b[4] = { (unsigned char)v, (unsigned char)(v >> 8), (unsigned char)(v >> 16), (unsigned char)(v >> 24) };
+        std::fwrite(b, 1, 4, f);
+    };
+    auto u16 = [f](uint16_t v) {
+        unsigned char b[2] = { (unsigned char)v, (unsigned char)(v >> 8) };
+        std::fwrite(b, 1, 2, f);
+    };
+    const uint32_t bytes = (uint32_t)(pcm.size() * sizeof(int16_t));
+    std::fwrite("RIFF", 1, 4, f);
+    u32(36 + bytes);
+    std::fwrite("WAVEfmt ", 1, 8, f);
+    u32(16);
+    u16(1);
+    u16(kMixChannels);
+    u32(kMixSampleRate);
+    u32(kMixSampleRate * kMixChannels * 2);
+    u16(kMixChannels * 2);
+    u16(16);
+    std::fwrite("data", 1, 4, f);
+    u32(bytes);
+    for (int16_t v : pcm)
+        u16((uint16_t)v);
+    std::fclose(f);
+    return true;
+}
+
+// Plays sound `id` alone and records it. False if it isn't in a loaded group (or made no sound).
+bool RenderOne(uint16_t id, const std::string& path)
+{
+    const uint32_t voice = sndFXStartEx(id, 127, 64, 0);
+    if (voice == kNoVoice)
+        return false;
+
+    const size_t samples = salPortBufferBytes() / sizeof(int16_t);
+    std::vector<int16_t> pcm;
+    int afterEnd = -1;
+    bool keyedOff = false;
+    for (int t = 0;; t++)
+    {
+        const int16_t* buf = (const int16_t*)salPortNextBuffer();
+        if (buf == nullptr)
+            break;
+        pcm.insert(pcm.end(), buf, buf + samples);
+        if (afterEnd < 0 && sndFXCheck(voice) == kNoVoice)
+            afterEnd = 0;
+        if (afterEnd >= 0 && ++afterEnd > kTailTicks)
+            break;
+        if (t >= kMaxSoundTicks)
+        {
+            // A looping sound: release it, and record its release too.
+            if (!keyedOff)
+            {
+                sndFXKeyOff(voice);
+                keyedOff = true;
+            }
+            if (t >= kMaxSoundTicks + kTicksPerSecond)
+                break;
+        }
+    }
+    Drain();
+
+    // Trim the silence at both ends (the buffers run a couple of ticks behind the engine).
+    size_t first = 0, last = pcm.size();
+    while (first < last && pcm[first] > -8 && pcm[first] < 8)
+        first++;
+    while (last > first && pcm[last - 1] > -8 && pcm[last - 1] < 8)
+        last--;
+    first -= first % kMixChannels;
+    last += (kMixChannels - last % kMixChannels) % kMixChannels;
+    if (last > pcm.size())
+        last = pcm.size();
+    if (first >= last)
+        return true; // started, but silent: nothing worth a file
+    std::vector<int16_t> trimmed(pcm.begin() + (long)first, pcm.begin() + (long)last);
+    return WriteWav(path, trimmed);
+}
+
+void WriteProgress(const char* state)
+{
+    if (FILE* f = std::fopen((g_dumpDir + "/_progreso.txt").c_str(), "wb"))
+    {
+        std::fprintf(f, "%s %d\n", state, g_dumpCount);
+        std::fclose(f);
+    }
+}
+
+} // namespace
+
+extern "C" int PortCustomSFXDumpRequested(void)
+{
+    const char* e = std::getenv("STRIKERS_DUMP_SFX");
+    return (e != nullptr && *e != '\0' && g_haveDir) ? 1 : 0;
+}
+
+extern "C" void PortCustomSFXDumpBegin(void)
+{
+    g_dumpDir = g_sfxDir + "/_originales";
+    std::error_code ec;
+    std::filesystem::create_directories(g_dumpDir, ec);
+    g_dumped.assign(g_soundNames.size(), false);
+    g_dumpCount = 0;
+    sndMasterVolume(127, 0, 1, 1); // whatever the options menu set, record at full level
+    Drain();
+    WriteProgress("trabajando");
+}
+
+extern "C" void PortCustomSFXDumpLoaded(void)
+{
+    for (size_t id = 0; id < g_soundNames.size(); id++)
+    {
+        if (g_dumped[id] || g_soundNames[id].empty())
+            continue;
+        if (RenderOne((uint16_t)id, g_dumpDir + "/" + g_soundNames[id] + ".wav"))
+        {
+            g_dumped[id] = true;
+            g_dumpCount++;
+        }
+    }
+    WriteProgress("trabajando");
+}
+
+extern "C" void PortCustomSFXDumpEnd(void)
+{
+    WriteProgress("listo");
+    std::fprintf(stderr, "[port] custom_sfx: extracted %d sounds into %s\n", g_dumpCount, g_dumpDir.c_str());
 }

@@ -61,6 +61,17 @@ int PortCustomSFXReplace(unsigned long sfxID);
 // per frame from the main thread.
 void PortCustomSFXPoll(void);
 
+// Extracting the game's own sounds into sfx/_originales/<NAME>.wav, for the
+// sound editor: with STRIKERS_DUMP_SFX set, the game calls DumpBegin, then
+// DumpLoaded once for each sound group it loads (it records every sound the
+// loaded groups hold that it hasn't yet, each on its own, driving MusyX
+// directly rather than through the audio device), then DumpEnd, and exits.
+// sfx/_originales/_progreso.txt holds "trabajando <n>" and then "listo <n>".
+int PortCustomSFXDumpRequested(void);
+void PortCustomSFXDumpBegin(void);
+void PortCustomSFXDumpLoaded(void);
+void PortCustomSFXDumpEnd(void);
+
 // Adds any currently-playing custom clips into `pcm` (interleaved, signed
 // 16-bit, stereo, `frames` sample pairs), with saturation. Called once per
 // audio buffer from the platform audio backend, after MusyX has rendered it.

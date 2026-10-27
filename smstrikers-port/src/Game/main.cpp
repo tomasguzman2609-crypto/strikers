@@ -692,6 +692,8 @@ static void PortPumpAuroraEvents()
 }
 #endif
 
+void PortSFXDumpIfRequested(); // PORT: Game/Audio/AudioLoader.cpp
+
 int main(int argc, char* argv[])
 {
     // PORT: strikers.ini -> environment, before anything reads one.
@@ -836,6 +838,9 @@ int main(int argc, char* argv[])
     }
 
     Initialize();
+
+    // PORT: STRIKERS_DUMP_SFX - the sound editor extracting the game's own sounds; quits when done.
+    PortSFXDumpIfRequested();
 
     fopen("flushfile.txt", "r");
 
