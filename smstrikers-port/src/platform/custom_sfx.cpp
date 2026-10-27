@@ -563,9 +563,35 @@ extern "C" void PortCustomSFXPoll(void)
     }
 }
 
+// The clips the mod plays itself, at one exact moment (a captain's Super Strike windup or kick,
+// Bowser's landing, the ball off the post, ...), through PortCustomSFXPlay/PlayFixed. Some share
+// their name with a sound the game also plays at other times (SFXCHAR_MARIO_EFFORTS_Kick_Super_01
+// on any charged shot, SFXCHAR_BOWSER_Activate when Bowser shows up, ...): a sonidos.txt line for
+// one only ever sets the file and volume of the mod's own moment, never those.
+static bool IsModMomentClip(const std::string& name)
+{
+    static const char* const kModClips[] = {
+        "SFXBALL_Post_Metal",
+        "SFXCHAR_BOWSER_Activate",
+        "SFXCHAR_DAISY_EFFORTS_Kick_Super_01",
+        "SFXCHAR_DAISY_EFFORTS_Windup_Super_01",
+        "SFXCHAR_HyperStrike_Charge_01",
+        "SFXCHAR_HyperStrike_Shot_01",
+        "SFXCHAR_MARIO_EFFORTS_Kick_Super_01",
+        "SFXCHAR_MARIO_EFFORTS_Windup_Super_01",
+        "SFXCHAR_MYSTERY_EFFORTS_Electrocute_01",
+        "SFXCHAR_Tackle_01",
+        "SFXCHAR_WARIO_EFFORTS_Electrocute_01",
+    };
+    for (const char* clip : kModClips)
+        if (name == clip)
+            return true;
+    return false;
+}
+
 extern "C" int PortCustomSFXReplace(unsigned long sfxID)
 {
-    if (sfxID >= g_soundNames.size() || g_soundNames[sfxID].empty())
+    if (sfxID >= g_soundNames.size() || g_soundNames[sfxID].empty() || IsModMomentClip(g_soundNames[sfxID]))
         return 0;
     RefreshConfig();
     auto it = g_replacements.find(g_soundNames[sfxID]);

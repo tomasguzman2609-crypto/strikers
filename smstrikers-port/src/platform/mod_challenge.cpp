@@ -282,6 +282,55 @@ extern "C" const char* PortModChallengeName(int challenge)
     return kNames[challenge];
 }
 
+extern "C" const char* PortModChallengeDescription(int challenge)
+{
+    // UTF-8, in ID order: what the challenge does, in a few words, for the on-screen tag.
+    static const char* const kDescriptions[PORT_CHALLENGE_COUNT] = {
+        "",
+        "Tu equipo solo recibe champiñones",
+        "El stick va al revés",
+        "Tu equipo no recibe ítems",
+        "Siempre tienes un ítem listo",
+        "Tus jugadores corren más lento",
+        "Tus jugadores corren más rápido",
+        "No puedes hacer pases elevados",
+        "No puedes barrer",
+        "No puedes empujar con el hombro",
+        "La CPU corre más rápido",
+        "La CPU recibe Chomps y Estrellas más seguido",
+        "La cerca eléctrica te aturde el doble",
+        "Todos tus tiros salen por arriba",
+        "La cerca casi no aturde a la CPU",
+        "Los goles de la CPU valen doble",
+        "Electrocutado por la cerca = fuera del partido",
+        "Solo tu capitán puede tirar al arco",
+        "Si la CPU se pone adelante, pierdes",
+        "Bowser viene más seguido y cae sobre ti",
+        "Más de 2 s con el balón y explota",
+        "Los golpes de la CPU te electrocutan",
+        "La maldición cambia con cada gol",
+        "La CPU tiene estrella 1 s cada 7 s",
+        "Un esquive exitoso da estrella 1.5 s",
+        "Tu arquero se marea con cada tiro",
+        "Cada 10 faltas tuyas, un Chomp va por ti",
+        "Gol justo después de una falta tuya: anulado",
+        "El arquero rival te devuelve los tiros",
+        "Jugadas con estilo llenan la barra; L+R = estrella",
+        "Empiezas solo con el capitán; el resto llega después",
+        "La CPU recibe más ítems y más fuertes",
+    };
+    if (challenge <= PORT_CHALLENGE_NONE || challenge >= PORT_CHALLENGE_COUNT)
+        return "";
+    return kDescriptions[challenge];
+}
+
+static unsigned int g_matchSerial = 0;
+
+extern "C" unsigned int PortModChallengeMatchSerial(void)
+{
+    return g_matchSerial;
+}
+
 extern "C" void PortModChallengeNoteMatchFrame(void)
 {
     g_matchFrames++;
@@ -503,6 +552,7 @@ extern "C" void PortChallengeCupEnd(void)
 extern "C" void PortChallengeCupBeginMatch(int inSuperBowserCup, int roundKey)
 {
     LoadCup();
+    g_matchSerial++;
     g_cupCurse = PORT_CHALLENGE_NONE;
     g_cupSidekicksThisMatch = false;
     if (inSuperBowserCup && g_cup.active)

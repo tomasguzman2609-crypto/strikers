@@ -53,7 +53,9 @@ void PortCustomSFXNamesReady(void);
 // Asked by the platform audio layer before it starts game sound `sfxID`:
 // returns 1 if sonidos.txt replaces it (the replacement has started, or it is
 // silenced), so the game's own sound must not play; 0 to play it as usual.
-// Replacements play unpositioned, at their own volume.
+// Replacements play unpositioned, at their own volume. Never for the clips the
+// mod plays itself at one moment (see IsModMomentClip in custom_sfx.cpp): their
+// line only sets the file and volume of that moment.
 int PortCustomSFXReplace(unsigned long sfxID);
 
 // Answers the sound editor's preview requests (sfx/_preview.txt: play a game

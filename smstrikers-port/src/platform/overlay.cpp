@@ -2050,6 +2050,7 @@ static void DrawChallengeBanner(void)
     static double s_meterFullUntil = 0.0;
     static unsigned int s_varReviews = 0;
     static double s_varUntil = 0.0;
+    static unsigned int s_matchSerial = 0;
 
     if (s_framesSinceMatch > 30)
     {
@@ -2059,9 +2060,14 @@ static void DrawChallengeBanner(void)
 
     const double now = ImGui::GetTime();
     const int achCount = PortAchievementsCount();
+    // Back from a stretch without match frames: a goal's celebration and replay pause cGame::Update
+    // too, so only a new match (BeginGame) starts the notices over; the same match just resumes.
+    if (!s_inMatch && s_matchSerial == PortModChallengeMatchSerial())
+        s_inMatch = true;
     if (!s_inMatch)
     {
         s_inMatch = true;
+        s_matchSerial = PortModChallengeMatchSerial();
         s_shownChallenge = PORT_CHALLENGE_NONE;
         s_achIntroUntil = achCount > 0 ? now + 6.0 : 0.0;
         s_achNames[0] = s_achNames[1] = nullptr;
@@ -2179,6 +2185,13 @@ static void DrawChallengeBanner(void)
                 ImGui::SameLine(0.0f, 24.0f * scale);
             ImGui::TextColored(CountDone() > 0 ? kGreen : kGrey, "Logros %d/%d", CountDone(), achCount);
         }
+        // What the challenge does, under its name, for the whole match.
+        const char* description = PortModChallengeDescription(active);
+        if (description[0] != '\0')
+        {
+            ImGui::SetWindowFontScale(1.15f * scale);
+            ImGui::TextColored(kGrey, "%s", description);
+        }
     }
     ImGui::End();
 
@@ -2279,6 +2292,8 @@ static void DrawChallengeBanner(void)
                                                     : "¡NUEVA MALDICIÓN!");
             ImGui::SetWindowFontScale(3.0f * scale);
             ImGui::TextColored(kGold, "%s", PortModChallengeName(active));
+            ImGui::SetWindowFontScale(1.6f * scale);
+            ImGui::TextUnformatted(PortModChallengeDescription(active));
         }
         ImGui::End();
         ImGui::PopStyleVar();
