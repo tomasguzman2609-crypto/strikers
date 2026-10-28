@@ -25,8 +25,15 @@ float PortRivalSidekickShotTimeScale(cFielder* pShooter);
 float PortRivalSidekickPassSpeedScale(cPlayer* pPasser);
 
 // From the start of the hit (bSlide false) and slide (bSlide true) reactions: if pVictim is a CPU
-// Koopa, sends the move back at pAttacker too (true if it did). The victim's own reaction still
-// goes ahead.
+// Koopa, sends the move back at pAttacker too (true if it did), on the next PortRivalSidekicksUpdate.
+// The victim's own reaction still goes ahead.
 bool PortRivalSidekickSpikes(cFielder* pVictim, cPlayer* pAttacker, bool bSlide);
+
+// Applies the bounces PortRivalSidekickSpikes queued, outside the collision code that queued them.
+// Once per frame from cGame::Update; bPlaying is false outside open play.
+void PortRivalSidekicksUpdate(bool bPlaying);
+
+// Forgets any queued bounce; at the start of every match.
+void PortRivalSidekicksReset();
 
 #endif // _RIVALSIDEKICKS_H_

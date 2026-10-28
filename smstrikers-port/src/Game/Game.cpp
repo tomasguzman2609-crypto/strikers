@@ -8,6 +8,7 @@
 #include "Game/VarReview.h"
 #include "Game/JogoBonito.h"
 #include "Game/Reinforcements.h"
+#include "Game/RivalSidekicks.h"
 #include "Game/AI/SelfishCaptain.h"
 #include "Game/CharacterTriggers.h"
 #include "Game/AI/ShockFantasma.h"
@@ -483,6 +484,8 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
     PortJogoBonitoReset();
     // PORT: challenge roulette - "Refuerzos" sets its bench up again once play starts.
     PortReinforcementsReset();
+    // PORT: challenge roulette extras - no Koopa spike bounce carries over from the last match.
+    PortRivalSidekicksReset();
     // PORT: challenge roulette - a Challenge Super Bowser Cup match plays under the round's curse
     // (drawn once per round, so replaying the match keeps it), ahead of the challenge.txt one.
     {
@@ -1452,6 +1455,9 @@ void cGame::Update(float deltaTime)
     PortJogoBonitoUpdate(m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME);
     // PORT: challenge roulette - "Refuerzos" (see Game/Reinforcements.h). Also publishes the meter.
     PortReinforcementsUpdate(deltaTime, m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME);
+    // PORT: challenge roulette extras - Koopa spikes bounce the hit or slide back, now that the
+    // collision that caused it is over (see Game/RivalSidekicks.h).
+    PortRivalSidekicksUpdate(m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME);
 
     // PORT: challenge roulette - "Papa Caliente" (see PortHotPotatoUpdate above).
     if (PortModChallengeGetActive() == PORT_CHALLENGE_HOT_POTATO

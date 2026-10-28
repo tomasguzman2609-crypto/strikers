@@ -30,6 +30,23 @@ bool IsRivalSidekick(cPlayer* pPlayer, eCharacterClass eClass)
         && pPlayer->m_eCharacterClass == eClass && !TeamHasHuman(pPlayer->m_pTeam);
 }
 
+// Spikes bounced back but not yet applied: the hit or slide reaction runs from inside the
+// attacker's own collision code, which carries on afterwards as if the attacker were still sliding
+// (marks the slide a success, picks the ball up, starts the missed-slide animation...). Knocking the
+// attacker down right there left it in a broken state and crashed the game, so the bounce waits for
+// cGame::Update, after the collision is over.
+struct PendingSpike
+{
+    cFielder* pHitter;
+    cFielder* pKoopa;
+    bool bSlide;
+    unsigned int uFrame; // PortModChallengeMatchFrameCount() when it hit the shell
+};
+
+const int kMaxPending = 4;
+PendingSpike s_pending[kMaxPending];
+int s_pendingCount = 0;
+
 } // namespace
 
 float PortRivalSidekickSpeedScale(cFielder* pFielder)
@@ -60,19 +77,51 @@ bool PortRivalSidekickSpikes(cFielder* pVictim, cPlayer* pAttacker, bool bSlide)
     // Something to see: the shell flashes like a goalie's deflection.
     EmitGoalieCatch(pVictim, "goalie_deflect", false);
 
-    // The same move comes straight back at the attacker, from the Koopa outwards - both go down.
-    // The attacker is down (and no longer attacking) from here on, so the contact that keeps
-    // calling the reaction every frame doesn't trigger this again.
-    if (bSlide)
+    // The same move comes straight back at the attacker, from the Koopa outwards - both go down -
+    // once the collision code that got us here has finished (see PendingSpike). Once per attacker.
+    for (int i = 0; i < s_pendingCount; i++)
     {
-        pHitter->InitActionSlideAttackReact(pVictim, false);
+        if (s_pending[i].pHitter == pHitter)
+            return true;
     }
-    else
+    if (s_pendingCount < kMaxPending)
     {
-        float dx = pHitter->m_v3Position.x - pVictim->m_v3Position.x;
-        float dy = pHitter->m_v3Position.y - pVictim->m_v3Position.y;
-        unsigned short aAway = (unsigned short)(int)(10430.378f * nlATan2f(dy, dx));
-        pHitter->InitActionHitReact(pVictim, aAway, false);
+        PendingSpike& spike = s_pending[s_pendingCount++];
+        spike.pHitter = pHitter;
+        spike.pKoopa = pVictim;
+        spike.bSlide = bSlide;
+        spike.uFrame = PortModChallengeMatchFrameCount();
     }
     return true;
+}
+
+void PortRivalSidekicksUpdate(bool bPlaying)
+{
+    const unsigned int uNow = PortModChallengeMatchFrameCount();
+    for (int i = 0; i < s_pendingCount; i++)
+    {
+        const PendingSpike& spike = s_pending[i];
+        cFielder* pHitter = spike.pHitter;
+        // Only straight after the hit, in open play, on someone still on their feet (a goal or the
+        // whistle in between, or anything else having knocked them over already, drops it).
+        if (!bPlaying || uNow - spike.uFrame > 3 || pHitter->IsFallenDown(0.0f))
+            continue;
+        if (spike.bSlide)
+        {
+            pHitter->InitActionSlideAttackReact(spike.pKoopa, false);
+        }
+        else
+        {
+            float dx = pHitter->m_v3Position.x - spike.pKoopa->m_v3Position.x;
+            float dy = pHitter->m_v3Position.y - spike.pKoopa->m_v3Position.y;
+            unsigned short aAway = (unsigned short)(int)(10430.378f * nlATan2f(dy, dx));
+            pHitter->InitActionHitReact(spike.pKoopa, aAway, false);
+        }
+    }
+    s_pendingCount = 0;
+}
+
+void PortRivalSidekicksReset()
+{
+    s_pendingCount = 0;
 }
