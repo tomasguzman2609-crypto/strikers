@@ -17,13 +17,13 @@ unsigned long GetLOCCharacterName(eTeamID, bool, bool);
 static bool s_portChallengeSlot = false;
 
 static const unsigned short* const kPortChallengeCupTitle = (const unsigned short*)L"CHALLENGE SUPER BOWSER CUP";
+// Kept short so the switch below fits; "{p}" starts a new line, "{clr:...}" colours the state.
 static const unsigned short* const kPortChallengeCupDescriptor =
-    (const unsigned short*)L"La Super Bowser Cup con una maldici\u00F3n al azar en cada partido. "
-                           L"Nunca se repite la del partido anterior. \u00A1Sobrevive y lev\u00E1ntala!";
+    (const unsigned short*)L"Torneo con maldiciones aleatorias.";
 static const unsigned short* const kPortSidekicksOn =
-    (const unsigned short*)L" Compa\u00F1eros \u00FAnicos rival: S\u00CD (X para cambiar)";
+    (const unsigned short*)L"{p}Buff compa\u00F1eros CPU: {clr:59C97A}S\u00CD{clr:pop}  (Y)";
 static const unsigned short* const kPortSidekicksOff =
-    (const unsigned short*)L" Compa\u00F1eros \u00FAnicos rival: NO (X para cambiar)";
+    (const unsigned short*)L"{p}Buff compa\u00F1eros CPU: {clr:FF6B6B}NO{clr:pop}  (Y)";
 
 // The Challenge cup's description plus the state of its "Compañeros únicos rival" switch.
 static const unsigned short* PortChallengeCupDescriptor()
@@ -454,11 +454,13 @@ void ChooseCupSceneV2::Update(float fDeltaT)
         return;
     }
 
-    // PORT: X on the Challenge cup flips its "Compañeros únicos rival" switch.
-    if (s_portChallengeSlot && g_pFEInput->JustPressed(FE_ALL_PADS, 0x400, false, NULL))
+    // PORT: Y on the Challenge cup flips its "Compañeros únicos rival" switch, with a sound for
+    // each way: accept for on, back for off.
+    if (s_portChallengeSlot && g_pFEInput->JustPressed(FE_ALL_PADS, 0x800, false, NULL))
     {
-        PortChallengeCupSetSidekicks(PortChallengeCupSidekicks() ? 0 : 1);
-        FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+        const bool bOn = PortChallengeCupSidekicks() == 0;
+        PortChallengeCupSetSidekicks(bOn ? 1 : 0);
+        FEAudio::PlayAnimAudioEvent(bOn ? "sfx_accept" : "sfx_back", false);
         TLTextInstance* pDescriptor = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             activeSlide,
             InlineHasher(nlStringLowerHash("Layer")),
