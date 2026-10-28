@@ -455,6 +455,8 @@ int PlayInternal(const char* name, float minScale)
 
 } // namespace
 
+static void PreloadModMomentClips();
+
 extern "C" void PortCustomSFXInit(void)
 {
     char dir[1024];
@@ -469,6 +471,7 @@ extern "C" void PortCustomSFXInit(void)
         v.clip = nullptr;
     g_nextConfigCheck = std::chrono::steady_clock::time_point();
     RefreshConfig();
+    PreloadModMomentClips();
 }
 
 extern "C" void PortCustomSFXRegisterName(unsigned long sfxID, const char* name)
@@ -568,25 +571,35 @@ extern "C" void PortCustomSFXPoll(void)
 // their name with a sound the game also plays at other times (SFXCHAR_MARIO_EFFORTS_Kick_Super_01
 // on any charged shot, SFXCHAR_BOWSER_Activate when Bowser shows up, ...): a sonidos.txt line for
 // one only ever sets the file and volume of the mod's own moment, never those.
+static const char* const kModClips[] = {
+    "SFXBALL_Post_Metal",
+    "SFXCHAR_BOWSER_Activate",
+    "SFXCHAR_DAISY_EFFORTS_Kick_Super_01",
+    "SFXCHAR_DAISY_EFFORTS_Windup_Super_01",
+    "SFXCHAR_HyperStrike_Charge_01",
+    "SFXCHAR_HyperStrike_Shot_01",
+    "SFXCHAR_MARIO_EFFORTS_Kick_Super_01",
+    "SFXCHAR_MARIO_EFFORTS_Windup_Super_01",
+    "SFXCHAR_MYSTERY_EFFORTS_Electrocute_01",
+    "SFXCHAR_Tackle_01",
+    "SFXCHAR_WARIO_EFFORTS_Electrocute_01",
+};
+
 static bool IsModMomentClip(const std::string& name)
 {
-    static const char* const kModClips[] = {
-        "SFXBALL_Post_Metal",
-        "SFXCHAR_BOWSER_Activate",
-        "SFXCHAR_DAISY_EFFORTS_Kick_Super_01",
-        "SFXCHAR_DAISY_EFFORTS_Windup_Super_01",
-        "SFXCHAR_HyperStrike_Charge_01",
-        "SFXCHAR_HyperStrike_Shot_01",
-        "SFXCHAR_MARIO_EFFORTS_Kick_Super_01",
-        "SFXCHAR_MARIO_EFFORTS_Windup_Super_01",
-        "SFXCHAR_MYSTERY_EFFORTS_Electrocute_01",
-        "SFXCHAR_Tackle_01",
-        "SFXCHAR_WARIO_EFFORTS_Electrocute_01",
-    };
     for (const char* clip : kModClips)
         if (name == clip)
             return true;
     return false;
+}
+
+// Loads the mod's own clips at start-up instead of on their first play, which decoded the .wav
+// mid-match (a hitch right at a Super Strike). sonidos.txt's are already loaded by RefreshConfig.
+static void PreloadModMomentClips()
+{
+    for (const char* clip : kModClips)
+        if (g_replacements.find(clip) == g_replacements.end())
+            FindOrLoad(ClipPath(std::string(clip) + ".wav"));
 }
 
 extern "C" int PortCustomSFXReplace(unsigned long sfxID)

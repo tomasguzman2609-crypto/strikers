@@ -1955,10 +1955,12 @@ void DrawProgressNotice(const char* id, int row, double until, double now, const
     ImGui::PopStyleVar();
 }
 
+// The pause menu's side panel: the match's challenge with what it does, then its achievements.
 void DrawPauseAchievements(void)
 {
     const int count = PortAchievementsCount();
-    if (count == 0)
+    const int active = PortModChallengeGetActive();
+    if (count == 0 && active == PORT_CHALLENGE_NONE)
         return;
     const ImGuiIO& io = ImGui::GetIO();
     const float scale = BannerScale();
@@ -1967,6 +1969,26 @@ void DrawPauseAchievements(void)
     ImGui::SetNextWindowBgAlpha(0.8f);
     if (ImGui::Begin("##achievements_pause", nullptr, kBannerFlags))
     {
+        if (active != PORT_CHALLENGE_NONE)
+        {
+            const bool cup = PortChallengeCupCurse() != PORT_CHALLENGE_NONE;
+            const bool rotating = PortModChallengeGetSelected() == PORT_CHALLENGE_ROTATING_CURSE;
+            ImGui::SetWindowFontScale(1.3f * scale);
+            ImGui::TextColored(kGrey, "%s", cup ? "CHALLENGE SUPER BOWSER CUP"
+                                                : (rotating ? "MALDICIÓN ROTATIVA" : "RETO DEL PARTIDO"));
+            ImGui::SetWindowFontScale(1.6f * scale);
+            ImGui::TextColored(kGold, "%s", PortModChallengeName(active));
+            ImGui::SetWindowFontScale(1.3f * scale);
+            ImGui::TextUnformatted(PortModChallengeDescription(active));
+            if (count == 0)
+            {
+                ImGui::End();
+                return;
+            }
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+        }
         ImGui::SetWindowFontScale(1.6f * scale);
         ImGui::TextColored(kGold, "LOGROS DEL PARTIDO  (%d/%d)", CountDone(), count);
         ImGui::SetWindowFontScale(1.3f * scale);
