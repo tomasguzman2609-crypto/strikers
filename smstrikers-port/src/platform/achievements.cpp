@@ -34,19 +34,19 @@ struct Definition
 };
 
 const Definition kDefinitions[ACH_COUNT] = {
-    { "Gol Relámpago", "Marca un gol antes de los 25 segundos", 1 },
+    { "Gol Relampago", "Marca un gol antes de los 25 segundos", 1 },
     { "Muralla", "Termina el partido sin recibir goles", 1 },
     { "Tanque", "Haz 15 tackles al rival", 15 },
-    { "Electricista", "Electrocuta 3 veces al capitán rival", 3 },
+    { "Electricista", "Electrocuta 3 veces al capitan rival", 3 },
     { "Golazo de Globito", "Marca un gol de globito", 1 },
-    { "Súper Gol", "Marca un gol con Súper Tiro", 1 },
+    { "Super Gol", "Marca un gol con Super Tiro", 1 },
     { "Cortacorrientes", "Interrumpe un tiro cargado del rival", 1 },
-    { "Goleada", "Gana por 3 goles o más", 1 },
-    { "Capitán Goleador", "Tu capitán marca 2 goles", 2 },
-    { "Remontada", "Gana después de ir perdiendo", 1 },
+    { "Goleada", "Gana por 3 goles o mas", 1 },
+    { "Capitan Goleador", "Tu capitan marca 2 goles", 2 },
+    { "Remontada", "Gana despues de ir perdiendo", 1 },
     { "Triple Impacto", "Golpea a 3 jugadores con un mismo item (cuentan los tuyos)", 1 },
     { "Esquive Turbo", "Consigue el impulso de un esquive perfecto (esquive + turbo)", 1 },
-    { "Slow-No", "Arruina el pase en cámara lenta del rival: derriba al que lo recibe o roba el balón", 1 },
+    { "Slow-No", "Arruina el pase en camara lenta del rival: derriba al que lo recibe o roba el balon", 1 },
 };
 
 const float kFastGoalSeconds = 25.0f;

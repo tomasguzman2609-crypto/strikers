@@ -21,9 +21,9 @@ static const unsigned short* const kPortChallengeCupTitle = (const unsigned shor
 static const unsigned short* const kPortChallengeCupDescriptor =
     (const unsigned short*)L"Torneo con maldiciones aleatorias.";
 static const unsigned short* const kPortSidekicksOn =
-    (const unsigned short*)L"{p}Buff compa\u00F1eros CPU: {clr:59C97A}S\u00CD{clr:pop}  (Y)";
+    (const unsigned short*)L"{p}Buff companeros CPU: {clr:59C97A}SI{clr:pop}  (Y)";
 static const unsigned short* const kPortSidekicksOff =
-    (const unsigned short*)L"{p}Buff compa\u00F1eros CPU: {clr:FF6B6B}NO{clr:pop}  (Y)";
+    (const unsigned short*)L"{p}Buff companeros CPU: {clr:FF6B6B}NO{clr:pop}  (Y)";
 
 // The Challenge cup's description plus the state of its "Compañeros únicos rival" switch.
 static const unsigned short* PortChallengeCupDescriptor()

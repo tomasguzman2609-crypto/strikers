@@ -1975,7 +1975,7 @@ void DrawPauseAchievements(void)
             const bool rotating = PortModChallengeGetSelected() == PORT_CHALLENGE_ROTATING_CURSE;
             ImGui::SetWindowFontScale(1.3f * scale);
             ImGui::TextColored(kGrey, "%s", cup ? "CHALLENGE SUPER BOWSER CUP"
-                                                : (rotating ? "MALDICIÓN ROTATIVA" : "RETO DEL PARTIDO"));
+                                                : (rotating ? "MALDICION ROTATIVA" : "RETO DEL PARTIDO"));
             ImGui::SetWindowFontScale(1.6f * scale);
             ImGui::TextColored(kGold, "%s", PortModChallengeName(active));
             ImGui::SetWindowFontScale(1.3f * scale);
@@ -2010,7 +2010,7 @@ void DrawPauseAchievements(void)
         }
         ImGui::Separator();
         if (PortAchievementsSkipAwarded())
-            ImGui::TextColored(kGreen, "¡Skip de ruleta ganado!");
+            ImGui::TextColored(kGreen, "Skip de ruleta ganado!");
         else
             ImGui::TextColored(kGrey, "Completa los dos para ganar un skip de ruleta");
     }
@@ -2197,7 +2197,7 @@ static void DrawChallengeBanner(void)
         bool bFirst = true;
         if (active != PORT_CHALLENGE_NONE)
         {
-            ImGui::TextColored(kGold, rotating ? "Maldición Rotativa: %s" : (cupCurse ? "Challenge Cup: %s" : "Reto: %s"),
+            ImGui::TextColored(kGold, rotating ? "Maldicion Rotativa: %s" : (cupCurse ? "Challenge Cup: %s" : "Reto: %s"),
                                PortModChallengeName(active));
             bFirst = false;
         }
@@ -2225,7 +2225,7 @@ static void DrawChallengeBanner(void)
         PortAchievementsGet(0, &a);
         PortAchievementsGet(1, &b);
         char text[256];
-        std::snprintf(text, sizeof text, "Logros: %s  ·  %s   (los dos = 1 skip · pausa para detalles)", a.name,
+        std::snprintf(text, sizeof text, "Logros: %s  -  %s   (los dos = 1 skip - pausa para detalles)", a.name,
                       b.name);
         DrawStackedNotice("##ach_intro", row++, s_achIntroUntil, now, kGold, text);
     }
@@ -2252,7 +2252,7 @@ static void DrawChallengeBanner(void)
             continue;
         char text[256];
         if (s_achStates[i] == PORT_ACH_DONE)
-            std::snprintf(text, sizeof text, "¡Logro conseguido: %s!", s_achNames[i]);
+            std::snprintf(text, sizeof text, "Logro conseguido: %s!", s_achNames[i]);
         else
             std::snprintf(text, sizeof text, "Logro perdido: %s", s_achNames[i]);
         DrawStackedNotice(i == 0 ? "##ach_notice0" : "##ach_notice1", row++, s_achNoticeUntil[i], now,
@@ -2263,16 +2263,16 @@ static void DrawChallengeBanner(void)
     const bool refuerzos = active == PORT_CHALLENGE_REINFORCEMENTS;
     if (jogo && meterTarget > 0 && meterProgress >= meterTarget)
         DrawStackedNotice("##challenge_meter_ready", row++, now + 1.0, now, kBlue,
-                          "¡JOGO BONITO!  L + R = Estrella para todo el equipo");
+                          "JOGO BONITO!  L + R = Estrella para todo el equipo");
     else if (now < s_meterUntil && meterTarget > 0)
         DrawProgressNotice("##challenge_meter", row++, s_meterUntil, now, PortModChallengeName(active),
                            meterProgress, meterTarget, jogo ? kBlue : (refuerzos ? kGreen : kRed));
     if (now < s_meterFullUntil && !jogo && !refuerzos)
-        DrawStackedNotice("##challenge_meter_full", row++, s_meterFullUntil, now, kRed, "¡Falta! Ahí viene el Chomp");
+        DrawStackedNotice("##challenge_meter_full", row++, s_meterFullUntil, now, kRed, "Falta! Ahi viene el Chomp");
 
     if (now < s_skipNoticeUntil)
         DrawStackedNotice("##ach_skip", row++, s_skipNoticeUntil, now, kGreen,
-                          "¡Logros completos! +1 skip de ruleta");
+                          "Logros completos! +1 skip de ruleta");
 
     // Modo VAR's verdict, in the upper middle of the screen, over the goal celebration.
     if (now < s_varUntil)
@@ -2286,7 +2286,7 @@ static void DrawChallengeBanner(void)
         if (ImGui::Begin("##var_verdict", nullptr, kBannerFlags))
         {
             ImGui::SetWindowFontScale(2.0f * scale);
-            ImGui::TextUnformatted("REVISIÓN VAR");
+            ImGui::TextUnformatted("REVISION VAR");
             ImGui::SetWindowFontScale(3.0f * scale);
             if (disallowed)
                 ImGui::TextColored(kRed, "VAR: GOL ANULADO");
@@ -2310,8 +2310,8 @@ static void DrawChallengeBanner(void)
         if (ImGui::Begin("##challenge_notice", nullptr, kBannerFlags))
         {
             ImGui::SetWindowFontScale(2.0f * scale);
-            ImGui::TextUnformatted(s_curseNoticeCup ? "CHALLENGE SUPER BOWSER CUP  ·  Maldición del partido"
-                                                    : "¡NUEVA MALDICIÓN!");
+            ImGui::TextUnformatted(s_curseNoticeCup ? "CHALLENGE SUPER BOWSER CUP  -  Maldicion del partido"
+                                                    : "NUEVA MALDICION!");
             ImGui::SetWindowFontScale(3.0f * scale);
             ImGui::TextColored(kGold, "%s", PortModChallengeName(active));
             ImGui::SetWindowFontScale(1.6f * scale);
