@@ -41,6 +41,8 @@ extern cBall* g_pBall;
 #include <stdlib.h>
 #include "port/overlay.h"
 #include <string.h>
+#include "NL/globalpad.h"
+
 #include "Game/AnimInventory.h"
 #include "Game/AI/ShotMeter.h"
 #include "Game/Effects/EmissionManager.h"
@@ -305,6 +307,29 @@ cGame::~cGame()
 #include "Game/ParticleUpdateTask.h"
 #include "Game/Audio/WorldAudio.h"
 
+// PORT: challenge roulette - whether this match's play has started (first GS_GAMEPLAY). Until then
+// (the stadium intro and the first kickoff) Z spends a roulette skip on the match's challenge.
+static bool s_bPortPlayStarted = false;
+
+static void PortSkipWindowUpdate(eGameState eState)
+{
+    if (eState == GS_GAMEPLAY || eState == GS_OVERTIME)
+        s_bPortPlayStarted = true;
+    const bool bOpen = !s_bPortPlayStarted && (eState == GS_PRE_GAME || eState == GS_KICKOFF);
+    PortModChallengeSetSkipWindow(bOpen ? 1 : 0);
+    if (!PortModChallengeSkipWindowOpen())
+        return;
+    for (int i = 0; i < 4; i++)
+    {
+        cGlobalPad* pPad = cPadManager::GetPad(i);
+        if (pPad != NULL && pPad->JustPressed(0x10 /* Z */, false))
+        {
+            PortModChallengeUseSkip();
+            return;
+        }
+    }
+}
+
 namespace Audio
 {
 extern cWorldSFX gWorldSFX;
@@ -474,6 +499,8 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
 
     // PORT: challenge roulette - a new match hasn't been ended early by any challenge yet.
     gPortMatchEndedEarly = false;
+    // PORT: challenge roulette - nor kicked off: a skip can be spent until it does.
+    s_bPortPlayStarted = false;
     // PORT: challenge roulette - "Shock Fantasma" eliminations last one match only.
     PortShockFantasmaReset();
     // PORT: challenge roulette - "Chomp Árbitro" counts fouls per match.
@@ -1275,6 +1302,7 @@ extern "C" void PortDebugFrame(void)
 // elsewhere in this codebase, e.g. cPlayer::GetGlobalPad()->m_padIndex).
 bool gPortMatchEndedEarly = false;
 
+
 static bool PortTeamHasHuman(cTeam* pTeam)
 {
     if (pTeam == NULL)
@@ -1406,6 +1434,9 @@ static void PortOpponentStarPulseUpdate(float fDeltaT, bool bActive)
 void cGame::Update(float deltaTime)
 {
     mThoughtsAllowedThisUpdate = 1;
+
+    // PORT: challenge roulette - Z spends a skip before the first kickoff (see PortSkipWindowUpdate).
+    PortSkipWindowUpdate(m_eGameState);
 
     // PORT: challenge roulette - poll mods/challenge.txt, then enforce the two challenges that
     // need a continuous per-frame nudge rather than a one-shot hook (NO_POWERUPS/INFINITE_POWERUPS

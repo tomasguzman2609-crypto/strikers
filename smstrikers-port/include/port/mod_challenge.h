@@ -222,6 +222,21 @@ int PortChallengeCupCurse(void);
 int PortChallengeCupSidekicks(void);
 void PortChallengeCupSetSidekicks(int on);
 
+// Spending a roulette skip from inside the game, before a match's first kickoff:
+//   - PortModChallengeSkips: how many are banked in mods/skips.txt (refreshed every poll).
+//   - PortModChallengeSetSkipWindow: the game says whether a skip may be spent right now.
+//   - PortModChallengeSkipWindowOpen: non-zero while it may (window open, a skip banked and a
+//     challenge in play), for the overlay's prompt.
+//   - PortModChallengeUseSkip: spends one: a Challenge cup match gets another curse for this round,
+//     Maldición Rotativa draws again, a roulette challenge becomes another one (written to
+//     challenge.txt). Returns 1 if it did.
+//   - PortModChallengeSkipSerial: goes up by one for each skip spent, for the overlay's notice.
+int PortModChallengeSkips(void);
+void PortModChallengeSetSkipWindow(int open);
+int PortModChallengeSkipWindowOpen(void);
+int PortModChallengeUseSkip(void);
+unsigned int PortModChallengeSkipSerial(void);
+
 // Resets the active challenge to PORT_CHALLENGE_NONE, both in memory and by rewriting
 // challenge.txt, so the companion app can tell the match ended and offer another spin. Call this
 // exactly once per match end (not every frame).

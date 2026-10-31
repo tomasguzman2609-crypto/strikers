@@ -2012,7 +2012,7 @@ void DrawPauseAchievements(void)
         if (PortAchievementsSkipAwarded())
             ImGui::TextColored(kGreen, "Skip de ruleta ganado!");
         else
-            ImGui::TextColored(kGrey, "Completa los dos para ganar un skip de ruleta");
+            ImGui::TextColored(kGrey, "Completa los dos para ganar un skip");
     }
     ImGui::End();
 }
@@ -2058,6 +2058,7 @@ static void DrawChallengeBanner(void)
     static int s_shownChallenge = PORT_CHALLENGE_NONE;
     static double s_curseNoticeUntil = 0.0;
     static bool s_curseNoticeCup = false;
+    static double s_curseNoticeSkipUntil = 0.0;
     static double s_achIntroUntil = 0.0;
     static const char* s_achNames[2] = { nullptr, nullptr };
     static int s_achStates[2] = { PORT_ACH_PENDING, PORT_ACH_PENDING };
@@ -2073,6 +2074,8 @@ static void DrawChallengeBanner(void)
     static unsigned int s_varReviews = 0;
     static double s_varUntil = 0.0;
     static unsigned int s_matchSerial = 0;
+    static unsigned int s_skipSerial = 0;
+    static bool s_curseNoticeSkip = false;
 
     if (s_framesSinceMatch > 30)
     {
@@ -2168,6 +2171,18 @@ static void DrawChallengeBanner(void)
     const int active = PortModChallengeGetActive();
     const bool rotating = PortModChallengeGetSelected() == PORT_CHALLENGE_ROTATING_CURSE;
     const bool cupCurse = PortChallengeCupCurse() != PORT_CHALLENGE_NONE;
+    // A skip spent with Z: the new challenge gets the big notice, whatever it is.
+    s_curseNoticeSkip = false;
+    if (PortModChallengeSkipSerial() != s_skipSerial)
+    {
+        s_skipSerial = PortModChallengeSkipSerial();
+        s_shownChallenge = active;
+        s_curseNoticeCup = false;
+        s_curseNoticeSkipUntil = now + 3.0;
+        s_curseNoticeUntil = now + 3.0;
+    }
+    if (now < s_curseNoticeSkipUntil)
+        s_curseNoticeSkip = true;
     if (active != s_shownChallenge)
     {
         // A Challenge Super Bowser Cup match opens with its curse, a little longer than a rotating draw.
@@ -2213,6 +2228,12 @@ static void DrawChallengeBanner(void)
         {
             ImGui::SetWindowFontScale(1.15f * scale);
             ImGui::TextColored(kGrey, "%s", description);
+        }
+        // Before the first kickoff, with a skip banked: how to spend it.
+        if (PortModChallengeSkipWindowOpen())
+        {
+            ImGui::SetWindowFontScale(1.3f * scale);
+            ImGui::TextColored(kGreen, "Z: usar skip y cambiar el reto (te quedan %d)", PortModChallengeSkips());
         }
     }
     ImGui::End();
@@ -2272,7 +2293,7 @@ static void DrawChallengeBanner(void)
 
     if (now < s_skipNoticeUntil)
         DrawStackedNotice("##ach_skip", row++, s_skipNoticeUntil, now, kGreen,
-                          "Logros completos! +1 skip de ruleta");
+                          "Logros completos! +1 skip (Z antes del saque, o en la ruleta)");
 
     // Modo VAR's verdict, in the upper middle of the screen, over the goal celebration.
     if (now < s_varUntil)
@@ -2310,8 +2331,9 @@ static void DrawChallengeBanner(void)
         if (ImGui::Begin("##challenge_notice", nullptr, kBannerFlags))
         {
             ImGui::SetWindowFontScale(2.0f * scale);
-            ImGui::TextUnformatted(s_curseNoticeCup ? "CHALLENGE SUPER BOWSER CUP  -  Maldicion del partido"
-                                                    : "NUEVA MALDICION!");
+            ImGui::TextUnformatted(s_curseNoticeSkip ? "SKIP USADO  -  Nuevo reto"
+                                   : s_curseNoticeCup ? "CHALLENGE SUPER BOWSER CUP  -  Maldicion del partido"
+                                                      : "NUEVA MALDICION!");
             ImGui::SetWindowFontScale(3.0f * scale);
             ImGui::TextColored(kGold, "%s", PortModChallengeName(active));
             ImGui::SetWindowFontScale(1.6f * scale);

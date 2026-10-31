@@ -113,6 +113,9 @@ int ParseChallenge(const std::string& content)
 
 } // namespace
 
+static int ReadSkips(void);
+static int g_skipsCached = 0;
+
 extern "C" void PortModChallengeInit(void)
 {
     char dir[1024];
@@ -134,20 +137,17 @@ extern "C" void PortModChallengeInit(void)
         g_lastContent = content;
         SetSelected(ParseChallenge(content));
     }
+    g_skipsCached = ReadSkips();
 
     // Whatever the last run left behind (e.g. a crash mid-match), no match is being played yet.
     PortModChallengeSetMatchPlaying(0);
 }
 
-extern "C" void PortModChallengeAwardSkip(void)
+// mods/skips.txt, shared with the companion app (which spends them too): always read-modify-write.
+static int ReadSkips(void)
 {
-    if (!g_havePath)
-        return;
-    const std::string path = g_modsDir + "/skips.txt";
-
-    // Read-modify-write: the companion app may have spent some since the last award.
     int skips = 0;
-    if (FILE* f = fopen(path.c_str(), "rb"))
+    if (FILE* f = fopen((g_modsDir + "/skips.txt").c_str(), "rb"))
     {
         char buf[32];
         size_t n = fread(buf, 1, sizeof buf - 1, f);
@@ -157,11 +157,24 @@ extern "C" void PortModChallengeAwardSkip(void)
         if (skips < 0)
             skips = 0;
     }
-    if (FILE* f = fopen(path.c_str(), "wb"))
+    return skips;
+}
+
+static void WriteSkips(int skips)
+{
+    if (FILE* f = fopen((g_modsDir + "/skips.txt").c_str(), "wb"))
     {
-        fprintf(f, "%d", skips + 1);
+        fprintf(f, "%d", skips < 0 ? 0 : skips);
         fclose(f);
     }
+}
+
+extern "C" void PortModChallengeAwardSkip(void)
+{
+    if (!g_havePath)
+        return;
+    g_skipsCached = ReadSkips() + 1;
+    WriteSkips(g_skipsCached);
 }
 
 extern "C" void PortModChallengeSetMatchPlaying(int playing)
@@ -211,6 +224,7 @@ extern "C" void PortModChallengeUpdate(void)
     }
     g_pollCountdown = kPollEveryNFrames;
     ReadExtras();
+    g_skipsCached = ReadSkips();
 
     std::string content;
     if (!ReadFile(content))
@@ -597,4 +611,87 @@ extern "C" void PortChallengeCupSetSidekicks(int on)
     LoadCup();
     g_cup.sidekicks = on != 0 ? 1 : 0;
     SaveCup();
+}
+
+// ---- Spending a skip in the game ----
+
+static bool g_skipWindowOpen = false;
+static unsigned int g_skipSerial = 0;
+
+extern "C" int PortModChallengeSkips(void)
+{
+    return g_skipsCached;
+}
+
+extern "C" void PortModChallengeSetSkipWindow(int open)
+{
+    g_skipWindowOpen = open != 0;
+}
+
+extern "C" int PortModChallengeSkipWindowOpen(void)
+{
+    return (g_skipWindowOpen && g_skipsCached > 0 && PortModChallengeGetActive() != PORT_CHALLENGE_NONE) ? 1 : 0;
+}
+
+extern "C" unsigned int PortModChallengeSkipSerial(void)
+{
+    return g_skipSerial;
+}
+
+extern "C" int PortModChallengeUseSkip(void)
+{
+    if (!g_havePath || !PortModChallengeSkipWindowOpen())
+        return 0;
+    const int skips = ReadSkips();
+    if (skips <= 0)
+    {
+        g_skipsCached = 0;
+        return 0;
+    }
+
+    if (g_cupCurse != PORT_CHALLENGE_NONE)
+    {
+        // A Challenge cup match: another curse for this round, under the cup's own rules (never the
+        // one being skipped, and the chance of those already seen kept low).
+        LoadCup();
+        const int next = DrawCupCurse(g_cup.curse);
+        g_cup.curse = next;
+        g_cup.last = next;
+        g_cup.used[next]++;
+        if (g_cup.pending == next)
+            g_cup.pending = DrawCupCurse(next);
+        SaveCup();
+        g_cupCurse = next;
+        g_rotatingDraw = PORT_CHALLENGE_NONE;
+        if (next == PORT_CHALLENGE_ROTATING_CURSE)
+            DrawRotating();
+    }
+    else if (g_activeChallenge == PORT_CHALLENGE_ROTATING_CURSE)
+    {
+        // Maldición Rotativa: a new draw, the way a goal makes one.
+        DrawRotating();
+    }
+    else
+    {
+        // The roulette's challenge: like the companion app's skip, any other challenge. Written to
+        // challenge.txt so the file stays the truth about what is being played.
+        const int current = g_activeChallenge;
+        const int first = PORT_CHALLENGE_NONE + 1;
+        const int count = PORT_CHALLENGE_COUNT - first;
+        int next;
+        do
+        {
+            next = first + (int)(NextRandom() % (unsigned int)count);
+        } while (next == current && count > 1);
+        char content[16];
+        snprintf(content, sizeof content, "%d", next);
+        WriteFile(content);
+        g_lastContent = content;
+        SetSelected(next);
+    }
+
+    g_skipsCached = skips - 1;
+    WriteSkips(g_skipsCached);
+    g_skipSerial++;
+    return 1;
 }
