@@ -1982,6 +1982,8 @@ void DrawPauseAchievements(void)
             ImGui::TextUnformatted(PortModChallengeDescription(active));
             if (count == 0)
             {
+                ImGui::SetWindowFontScale(1.0f * scale);
+                ImGui::TextColored(kGrey, "Skips guardados: %d  -  Challenge Mod v1.0", PortModChallengeSkips());
                 ImGui::End();
                 return;
             }
@@ -2010,9 +2012,12 @@ void DrawPauseAchievements(void)
         }
         ImGui::Separator();
         if (PortAchievementsSkipAwarded())
-            ImGui::TextColored(kGreen, "Skip de ruleta ganado!");
+            ImGui::TextColored(kGreen, "Skip ganado!");
         else
             ImGui::TextColored(kGrey, "Completa los dos para ganar un skip");
+        ImGui::TextColored(kGrey, "Skips guardados: %d  (Z antes del saque, o en la ruleta)", PortModChallengeSkips());
+        ImGui::SetWindowFontScale(1.0f * scale);
+        ImGui::TextColored(kGrey, "Challenge Mod v1.0");
     }
     ImGui::End();
 }

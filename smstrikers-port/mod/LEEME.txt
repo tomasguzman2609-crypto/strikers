@@ -1,0 +1,75 @@
+STRIKERS CHALLENGE MOD v1.0 - GUIA RAPIDA
+=========================================
+
+QUE VA EN LA CARPETA DEL JUEGO
+  strikers.exe            El juego
+  StrikersRoulette.exe    La ruleta de retos
+  StrikersSonidos.exe     El editor de sonidos
+  mods\                   Lo usan el juego y la ruleta (se crea solo)
+  sfx\                    Tus .wav y la configuracion de sonidos
+
+CREAR LOS .EXE DE LAS HERRAMIENTAS
+  1. Pon crear_exes.bat junto a roulette.py y sonidos.py.
+  2. Doble clic en crear_exes.bat (la primera vez instala PyInstaller).
+  3. Copia los dos .exe que aparecen a la carpeta del juego.
+  Hace falta Python (python.org, marcando "Add python.exe to PATH").
+
+
+RULETA (StrikersRoulette.exe)
+  - GIRAR (o barra espaciadora): sortea un reto para el proximo partido.
+    Debajo del nombre aparece que hace.
+  - Extras > Companeros unicos rival: buffs para los companeros de la CPU
+    (Toad mas rapido, Hammer Bros tiros mas rapidos, Koopa con espinas,
+    Birdo pases mas rapidos).
+  - Challenge Super Bowser Cup: muestra la maldicion del proximo partido de la
+    copa y deja saltarla con un skip.
+  - "Siempre visible": deja la ruleta encima del juego.
+
+SKIPS
+  - Completa los 2 logros de un partido y ganas 1 skip.
+  - Se usan de dos formas:
+      * En el juego: antes del primer saque del partido, aprieta Z.
+        Abajo aparece "Z: usar skip y cambiar el reto (te quedan N)".
+      * En la ruleta, entre partidos.
+  - En pausa ves cuantos skips tienes guardados.
+
+
+EN EL JUEGO
+  - Abajo al centro: el reto o la maldicion, que hace, y tus logros.
+  - En pausa: el reto con su descripcion, los logros y tus skips.
+  - Challenge Super Bowser Cup: en Super Copas, a la derecha de la Super Bowser
+    Cup. Cada partido trae una maldicion al azar (nunca la del partido anterior,
+    y las que ya salieron tienen menos probabilidad). Con Y activas o desactivas
+    "Buff companeros CPU" para esa copa.
+    Comparte el espacio de guardado con la Super Bowser Cup normal: si empiezas
+    una con la otra a medias, el juego pregunta si quieres sobrescribirla.
+
+
+SONIDOS (StrikersSonidos.exe)
+  - Una fila por cada sonido del juego. Busca por nombre o por personaje
+    (ej. "super team", "bowser", "publico", "items").
+  - Clic en "Asignar sonido" para elegir tu .wav (se copia solo a sfx\).
+  - Clic en "Volumen" para ajustarlo (0-200 %). Clic en "Activo" para
+    prender/apagar el reemplazo (apagado = sonido original del juego).
+  - Play: el primero toca el sonido ORIGINAL, el segundo el TUYO con su volumen.
+  - "Extraer sonidos originales" (una sola vez): el juego se abre, guarda cada
+    sonido original en sfx\_originales\ y se cierra solo. Despues el Play del
+    original funciona al instante, sin abrir el juego.
+  - Los .wav de sfx\ que se llamen como un sonido se asignan solos.
+  - Filas con estrella = momentos del mod (supers, Bowser al caer, poste...).
+    Esos solo suenan en ese momento exacto.
+  - Atajos: Espacio = original, Enter = tu sonido, Supr = quitar asignacion.
+  - Los cambios se guardan solos y el juego los toma en 1 segundo.
+
+  Slowmo:
+  - Voces de los supers: siempre a velocidad normal.
+  - El resto de sonidos personalizados: siguen el slowmo, pero nunca bajan
+    del 75 %.
+
+
+SI ALGO NO ANDA
+  - La herramienta de sonidos no muestra la lista: abre el juego una vez
+    (crea sfx\_lista_de_sonidos.txt).
+  - Windows avisa "aplicacion desconocida" al abrir un .exe hecho con
+    PyInstaller: "Mas informacion" > "Ejecutar de todas formas".
+  - Un .wav no suena: tiene que ser WAV PCM (8/16/24/32 bits).

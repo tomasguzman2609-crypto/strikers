@@ -416,13 +416,22 @@ int StartClip(Clip* c, float minScale, float gain)
     if (c->loaded && !c->samples.empty() && gain > 0.0f)
     {
         std::lock_guard<std::mutex> lock(g_voiceLock);
-        Voice* slot = &g_voices[0]; // all voices busy: steal slot 0 rather than drop the cue
+        // A free voice, or else the one closest to its end (rather than drop the cue, or cut a
+        // line that has only just started, like a Super Strike's).
+        Voice* slot = nullptr;
+        double leastLeft = 0.0;
         for (auto& v : g_voices)
         {
             if (v.clip == nullptr)
             {
                 slot = &v;
                 break;
+            }
+            const double left = (double)(v.clip->samples.size() / kMixChannels) - v.framePos;
+            if (slot == nullptr || left < leastLeft)
+            {
+                slot = &v;
+                leastLeft = left;
             }
         }
         slot->clip = c;
