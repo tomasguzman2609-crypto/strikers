@@ -9,6 +9,8 @@
 #ifndef PORT_CUSTOM_SFX_H
 #define PORT_CUSTOM_SFX_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,6 +59,17 @@ void PortCustomSFXNamesReady(void);
 // mod plays itself at one moment (see IsModMomentClip in custom_sfx.cpp): their
 // line only sets the file and volume of that moment.
 int PortCustomSFXReplace(unsigned long sfxID);
+
+// A clip played like PortCustomSFXPlay, carrying `tag` (any non-zero value,
+// e.g. the character it belongs to) so PortCustomSFXStopTag can cut it short.
+int PortCustomSFXPlayTagged(const char* name, uintptr_t tag);
+void PortCustomSFXStopTag(uintptr_t tag);
+int PortCustomSFXTagPlaying(uintptr_t tag); // non-zero while a clip with that tag is playing
+
+// Silences the game's own sounds whose name starts with `prefix` for the next
+// `seconds` (they don't start; already-playing ones are left alone), so a clip
+// of the mod's own is heard in their place.
+void PortCustomSFXMuteFor(const char* prefix, float seconds);
 
 // Answers the sound editor's preview requests (sfx/_preview.txt: play a game
 // sound as it really is, or its assigned clip at its volume). Cheap; call once

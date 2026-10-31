@@ -32,6 +32,11 @@ void EmitDust(cPlayer* player, const char* name);
 void EmitTurbo(cPlayer* player, const char* unused);
 void KillWindup(cCharacter* pCharacter, const char* name, bool bKill);
 void KillWindups(cCharacter* pCharacter);
+// PORT: the Super Team's charge / kick / goal celebration voice (see CharacterTriggers.cpp).
+void PortSuperTeamChargeStart(cFielder* pFielder);
+void PortSuperTeamChargeStop(cCharacter* pCharacter);
+void PortSuperTeamKick(cFielder* pFielder);
+void PortSuperTeamGoalCelebration(int nSide, unsigned int uNumGoalsScored);
 void EmitWindupAtCharacter(cCharacter* pCharacter, const char* name);
 void EmitWindupAtBall(cCharacter* pCharacter, const char* name);
 void EmitShootToScoreHyperStrike(cFielder* pFielder);

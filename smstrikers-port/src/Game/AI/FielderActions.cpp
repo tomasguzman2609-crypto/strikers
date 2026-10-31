@@ -3012,6 +3012,8 @@ inline static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float 
  */
 void cFielder::InitActionShootToScore()
 {
+    // PORT: a Super Strike has its own lines: no Super Team charging clip under them.
+    PortSuperTeamChargeStop(this);
     ActionShootToScoreVars stsVars;
     mActionShootToScoreVars = stsVars;
 

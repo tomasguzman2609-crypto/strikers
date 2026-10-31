@@ -1,4 +1,5 @@
 #include "Game/Render/Presentation.h"
+#include "Game/CharacterTriggers.h"
 #include "port/aspect.h"
 #include "Game/BeginFrameTask.h"
 #include "Game/FixedUpdateTask.h"\n#include <stdlib.h>
@@ -1030,6 +1031,10 @@ void Presentation::EventHandler(Event* event)
                 NisPlayer::Instance()->SetExtraNameFilter(filter);
                 CallFunction(nlStringHash(script));
             }
+
+            // PORT: the Super Team's own celebration voice as the scene starts (a goal that
+            // counts only: the VAR leaves a disallowed one at 0 goals).
+            PortSuperTeamGoalCelebration((int)gsd->uTeamIndex, gsd->uNumGoalsScored);
 
             bool foundTeamPad = false;
             for (s32 i = 0; i < 4; i++)

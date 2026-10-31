@@ -2921,6 +2921,12 @@ void cFielder::DoRegularShooting()
 
     bool bIsSTS = (m_eActionState == ACTION_SHOOT_TO_SCORE);
 
+    // PORT: the Super Team's kick, for every regular shot (a Super Strike has its own lines).
+    if (!bIsSTS)
+    {
+        PortSuperTeamKick(this);
+    }
+
     if (bIsSTS)
     {
         CalcShootToScoreShot(v3BallVelocity, v3Target);
@@ -4040,6 +4046,9 @@ void cFielder::SetWindupWBAnimState()
     Play3DSFX(Audio::CHARSFX_EFFORTS_HEAD_SHAKE, PHYSOBJ, 100.0f);
 
     EmitWindupAtBall(this, "ball_shot_windup");
+
+    // PORT: the Super Team's charging clip (see PortSuperTeamChargeStart).
+    PortSuperTeamChargeStart(this);
 }
 
 /**

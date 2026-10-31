@@ -58,6 +58,7 @@ struct Voice
                             // kVoiceLineMinScale), so clips slow down with the
                             // sim but never below it
     float gain = 1.0f; // the clip's volume from sfx/sonidos.txt (1.0 = as recorded)
+    uintptr_t tag = 0; // PortCustomSFXPlayTagged's tag, so PortCustomSFXStopTag can cut it short
 };
 
 // One line of sfx/sonidos.txt: which file replaces a game sound, how loud, and
@@ -408,7 +409,7 @@ void RefreshConfig()
             FindOrLoad(ClipPath(kv.second.file));
 }
 
-int StartClip(Clip* c, float minScale, float gain)
+int StartClip(Clip* c, float minScale, float gain, uintptr_t tag = 0)
 {
     if (c == nullptr || !c->exists)
         return 0;
@@ -438,11 +439,12 @@ int StartClip(Clip* c, float minScale, float gain)
         slot->framePos = 0.0;
         slot->minScale = minScale;
         slot->gain = gain;
+        slot->tag = tag;
     }
     return 1;
 }
 
-int PlayInternal(const char* name, float minScale)
+int PlayInternal(const char* name, float minScale, uintptr_t tag = 0)
 {
     if (name == nullptr || *name == '\0')
         return 0;
@@ -457,9 +459,9 @@ int PlayInternal(const char* name, float minScale)
             return 0;
         if (r.file == "-")
             return 1;
-        return StartClip(FindOrLoad(ClipPath(r.file)), minScale, r.gain);
+        return StartClip(FindOrLoad(ClipPath(r.file)), minScale, r.gain, tag);
     }
-    return StartClip(FindOrLoad(ClipPath(std::string(name) + ".wav")), minScale, 1.0f);
+    return StartClip(FindOrLoad(ClipPath(std::string(name) + ".wav")), minScale, 1.0f, tag);
 }
 
 } // namespace
@@ -483,6 +485,29 @@ extern "C" void PortCustomSFXInit(void)
     PreloadModMomentClips();
 }
 
+// The clips the mod plays itself, at one exact moment (a captain's Super Strike windup or kick,
+// Bowser's landing, the ball off the post, ...), through PortCustomSFXPlay/PlayFixed. Some share
+// their name with a sound the game also plays at other times (SFXCHAR_MARIO_EFFORTS_Kick_Super_01
+// on any charged shot, SFXCHAR_BOWSER_Activate when Bowser shows up, ...): a sonidos.txt line for
+// one only ever sets the file and volume of the mod's own moment, never those.
+static const char* const kModClips[] = {
+    // Super Team: charging a shot, the kick, a goal celebration (Game/CharacterTriggers.cpp).
+    "Extroyer_Cargar_Tiro",
+    "Extroyer_Pegar_Pelota",
+    "celebracion_extroyer",
+    "SFXBALL_Post_Metal",
+    "SFXCHAR_BOWSER_Activate",
+    "SFXCHAR_DAISY_EFFORTS_Kick_Super_01",
+    "SFXCHAR_DAISY_EFFORTS_Windup_Super_01",
+    "SFXCHAR_HyperStrike_Charge_01",
+    "SFXCHAR_HyperStrike_Shot_01",
+    "SFXCHAR_MARIO_EFFORTS_Kick_Super_01",
+    "SFXCHAR_MARIO_EFFORTS_Windup_Super_01",
+    "SFXCHAR_MYSTERY_EFFORTS_Electrocute_01",
+    "SFXCHAR_Tackle_01",
+    "SFXCHAR_WARIO_EFFORTS_Electrocute_01",
+};
+
 extern "C" void PortCustomSFXRegisterName(unsigned long sfxID, const char* name)
 {
     if (name == nullptr || sfxID >= 0x10000)
@@ -504,6 +529,9 @@ extern "C" void PortCustomSFXNamesReady(void)
     for (const std::string& name : g_soundNames)
         if (!name.empty())
             std::fprintf(f, "%s\n", name.c_str());
+    // The mod's own moments too, so the sound editor lists them (and assigns their .wav by name).
+    for (const char* clip : kModClips)
+        std::fprintf(f, "%s\n", clip);
     std::fclose(f);
 }
 
@@ -575,25 +603,6 @@ extern "C" void PortCustomSFXPoll(void)
     }
 }
 
-// The clips the mod plays itself, at one exact moment (a captain's Super Strike windup or kick,
-// Bowser's landing, the ball off the post, ...), through PortCustomSFXPlay/PlayFixed. Some share
-// their name with a sound the game also plays at other times (SFXCHAR_MARIO_EFFORTS_Kick_Super_01
-// on any charged shot, SFXCHAR_BOWSER_Activate when Bowser shows up, ...): a sonidos.txt line for
-// one only ever sets the file and volume of the mod's own moment, never those.
-static const char* const kModClips[] = {
-    "SFXBALL_Post_Metal",
-    "SFXCHAR_BOWSER_Activate",
-    "SFXCHAR_DAISY_EFFORTS_Kick_Super_01",
-    "SFXCHAR_DAISY_EFFORTS_Windup_Super_01",
-    "SFXCHAR_HyperStrike_Charge_01",
-    "SFXCHAR_HyperStrike_Shot_01",
-    "SFXCHAR_MARIO_EFFORTS_Kick_Super_01",
-    "SFXCHAR_MARIO_EFFORTS_Windup_Super_01",
-    "SFXCHAR_MYSTERY_EFFORTS_Electrocute_01",
-    "SFXCHAR_Tackle_01",
-    "SFXCHAR_WARIO_EFFORTS_Electrocute_01",
-};
-
 static bool IsModMomentClip(const std::string& name)
 {
     for (const char* clip : kModClips)
@@ -611,9 +620,82 @@ static void PreloadModMomentClips()
             FindOrLoad(ClipPath(std::string(clip) + ".wav"));
 }
 
+// Game sounds silenced for a moment because one of the mod's own clips is playing in their place
+// (PortCustomSFXMuteFor): name prefix and until when.
+struct MuteWindow
+{
+    std::string prefix;
+    std::chrono::steady_clock::time_point until;
+};
+static std::vector<MuteWindow> g_mutes;
+
+static bool IsMutedNow(const std::string& name)
+{
+    const auto now = std::chrono::steady_clock::now();
+    for (size_t i = 0; i < g_mutes.size();)
+    {
+        if (now >= g_mutes[i].until)
+        {
+            g_mutes.erase(g_mutes.begin() + (long)i);
+            continue;
+        }
+        if (name.compare(0, g_mutes[i].prefix.size(), g_mutes[i].prefix) == 0)
+            return true;
+        i++;
+    }
+    return false;
+}
+
+extern "C" void PortCustomSFXMuteFor(const char* prefix, float seconds)
+{
+    if (prefix == nullptr || *prefix == '\0' || !(seconds > 0.0f))
+        return;
+    const auto until = std::chrono::steady_clock::now() + std::chrono::milliseconds((long)(seconds * 1000.0f));
+    for (MuteWindow& m : g_mutes)
+    {
+        if (m.prefix == prefix)
+        {
+            if (until > m.until)
+                m.until = until;
+            return;
+        }
+    }
+    g_mutes.push_back({ prefix, until });
+}
+
+extern "C" int PortCustomSFXPlayTagged(const char* name, uintptr_t tag)
+{
+    return PlayInternal(name, kSlowMoFloor, tag);
+}
+
+extern "C" int PortCustomSFXTagPlaying(uintptr_t tag)
+{
+    if (tag == 0)
+        return 0;
+    std::lock_guard<std::mutex> lock(g_voiceLock);
+    for (auto& v : g_voices)
+        if (v.clip != nullptr && v.tag == tag)
+            return 1;
+    return 0;
+}
+
+extern "C" void PortCustomSFXStopTag(uintptr_t tag)
+{
+    if (tag == 0)
+        return;
+    std::lock_guard<std::mutex> lock(g_voiceLock);
+    for (auto& v : g_voices)
+        if (v.clip != nullptr && v.tag == tag)
+            v.clip = nullptr;
+}
+
 extern "C" int PortCustomSFXReplace(unsigned long sfxID)
 {
-    if (sfxID >= g_soundNames.size() || g_soundNames[sfxID].empty() || IsModMomentClip(g_soundNames[sfxID]))
+    if (sfxID >= g_soundNames.size() || g_soundNames[sfxID].empty())
+        return 0;
+    if (!g_mutes.empty() && IsMutedNow(g_soundNames[sfxID]))
+        return 1;
+    if (IsModMomentClip(g_soundNames[sfxID]))
         return 0;
     RefreshConfig();
     auto it = g_replacements.find(g_soundNames[sfxID]);

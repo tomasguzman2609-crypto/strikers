@@ -43,6 +43,8 @@ void ShotMeter::Update(float fDeltaT, bool bHoldTime)
                 {
                     if (g_pBall->GetOwnerFielder()->CanDoCaptainShootToScore())
                     {
+                        // PORT: the charge is turning into a Super Strike, which has its own lines.
+                        PortSuperTeamChargeStop(g_pBall->GetOwnerFielder());
                         m_eShotMeterState = SHOT_METER_STS_TRANSISTION;
                         break;
                     }
@@ -87,6 +89,8 @@ void ShotMeter::Update(float fDeltaT, bool bHoldTime)
  */
 void ShotMeter::Abort(cFielder* pFielder)
 {
+    // PORT: a shot called off (hit, ball lost, ...) takes the Super Team's charging clip with it.
+    PortSuperTeamChargeStop(pFielder);
     KillWindups(pFielder);
     m_eShotMeterState = SHOT_METER_INACTIVE;
     m_fTime = 0.0f;

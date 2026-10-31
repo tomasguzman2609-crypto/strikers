@@ -8,6 +8,7 @@
 #include "Game/Game.h"
 #include "Game/Physics/PhysicsAIBall.h"
 #include "Game/AI/Fielder.h"
+#include "Game/AI/ShotMeter.h"
 #include "Game/AI/Powerups.h"
 #include "Game/GameInfo.h"
 #include "Game/FE/feHelpFuncs.h"
@@ -1653,6 +1654,65 @@ void EmitWindupAtBall(cCharacter* pCharacter, const char* name)
     pCharacter->AttachEffect(pController);
     Function1<void, EmissionController&> update2(UpdateEmitterFromBall);
     pController->SetUpdateCallback(update2);
+}
+
+// PORT: the Super Team's own voice for three moments, sfx/<name>.wav (sonidos.txt can change the
+// file and volume, or switch one off). Each plays for any Super Team (MYSTERY) fielder, human or
+// CPU; never during a Super Strike, which has its own lines (SFXCHAR_HyperStrike_*).
+//   - Extroyer_Cargar_Tiro: as a shot starts charging; cut short by the kick, by the shot being
+//     called off, or by the charge turning into a Super Strike.
+//   - Extroyer_Pegar_Pelota: on the kick of every regular shot (charged, one-timer, chip, loose
+//     ball), in place of the Super Team's own kick grunt.
+//   - celebracion_extroyer: as the goal celebration scene starts, for a Super Team goal that
+//     counts (not one the VAR disallowed), in place of the Super Team's own celebration line.
+static bool PortIsSuperTeam(cCharacter* pCharacter)
+{
+    return pCharacter != NULL && pCharacter->m_eCharacterClass == MYSTERY;
+}
+
+void PortSuperTeamChargeStart(cFielder* pFielder)
+{
+    if (!PortIsSuperTeam(pFielder))
+        return;
+    // Only an ordinary charge: the windup animation is set again while a Super Strike charges.
+    if (pFielder->m_pShotMeter == NULL || pFielder->m_pShotMeter->m_eShotMeterState != SHOT_METER_ACTIVE)
+        return;
+    // Called again while the same charge goes on: keep the clip that is already playing.
+    const uintptr_t tag = (uintptr_t)pFielder;
+    if (!PortCustomSFXTagPlaying(tag))
+        PortCustomSFXPlayTagged("Extroyer_Cargar_Tiro", tag);
+}
+
+void PortSuperTeamChargeStop(cCharacter* pCharacter)
+{
+    if (PortIsSuperTeam(pCharacter))
+        PortCustomSFXStopTag((uintptr_t)pCharacter);
+}
+
+void PortSuperTeamKick(cFielder* pFielder)
+{
+    if (!PortIsSuperTeam(pFielder))
+        return;
+    PortCustomSFXStopTag((uintptr_t)pFielder);
+    if (PortCustomSFXPlay("Extroyer_Pegar_Pelota"))
+    {
+        // The Super Team's own kick grunt, whether it already started this frame or comes next.
+        pFielder->StopSFX(Audio::CHARSFX_EFFORTS_KICK_01);
+        pFielder->StopSFX(Audio::CHARSFX_EFFORTS_KICK_02);
+        pFielder->StopSFX(Audio::CHARSFX_EFFORTS_KICK_03);
+        PortCustomSFXMuteFor("SFXCHAR_SUPER_EFFORTS_Kick_0", 0.6f);
+    }
+}
+
+void PortSuperTeamGoalCelebration(int nSide, unsigned int uNumGoalsScored)
+{
+    if (uNumGoalsScored == 0 || nSide < 0 || nSide > 1 || g_pTeams[nSide] == NULL)
+        return; // a goal the VAR disallowed
+    bool bSuperTeam = false;
+    for (int i = 0; i < 5 && !bSuperTeam; i++)
+        bSuperTeam = PortIsSuperTeam(g_pTeams[nSide]->GetPlayer(i));
+    if (bSuperTeam && PortCustomSFXPlayFixed("celebracion_extroyer"))
+        PortCustomSFXMuteFor("SFXCHAR_SUPER_NIS_Goal", 10.0f);
 }
 
 /**

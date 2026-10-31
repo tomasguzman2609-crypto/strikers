@@ -1018,6 +1018,8 @@ cGlobalPad* cPlayer::GetGlobalPad()
  */
 void cPlayer::ReleaseBall()
 {
+    // PORT: the ball is gone (kicked, passed, lost): so is the Super Team's charging clip.
+    PortSuperTeamChargeStop(this);
     m_pPhysicsCharacter->ReleaseObject();
     m_pBall->ClearOwner();
     m_pBall = NULL;

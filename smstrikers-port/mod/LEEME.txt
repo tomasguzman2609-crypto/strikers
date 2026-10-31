@@ -61,6 +61,13 @@ SONIDOS (StrikersSonidos.exe)
   - Atajos: Espacio = original, Enter = tu sonido, Supr = quitar asignacion.
   - Los cambios se guardan solos y el juego los toma en 1 segundo.
 
+  Super Team (pon estos .wav en sfx\ con este nombre exacto):
+  - Extroyer_Cargar_Tiro.wav   al empezar a cargar un tiro (se corta al patear)
+  - Extroyer_Pegar_Pelota.wav  al pegarle al balon en cualquier tiro
+  - celebracion_extroyer.wav   al empezar la celebracion de un gol del Super Team
+  Nunca suenan durante el super tiro (tiene sus propios sonidos), y tapan la
+  voz original del Super Team en esos momentos.
+
   Slowmo:
   - Voces de los supers: siempre a velocidad normal.
   - El resto de sonidos personalizados: siguen el slowmo, pero nunca bajan
