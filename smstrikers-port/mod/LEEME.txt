@@ -18,9 +18,6 @@ CREAR LOS .EXE DE LAS HERRAMIENTAS
 RULETA (StrikersRoulette.exe)
   - GIRAR (o barra espaciadora): sortea un reto para el proximo partido.
     Debajo del nombre aparece que hace.
-  - Extras > Companeros unicos rival: buffs para los companeros de la CPU
-    (Toad mas rapido, Hammer Bros tiros mas rapidos, Koopa con espinas,
-    Birdo pases mas rapidos).
   - Challenge Super Bowser Cup: muestra la maldicion del proximo partido de la
     copa y deja saltarla con un skip.
   - "Siempre visible": deja la ruleta encima del juego.
@@ -37,6 +34,10 @@ SKIPS
 EN EL JUEGO
   - Abajo al centro: el reto o la maldicion, que hace, y tus logros.
   - En pausa: el reto con su descripcion, los logros y tus skips.
+  - Buff companeros CPU (Toad mas rapido, Hammer Bros tiros mas rapidos, Koopa
+    con espinas, Birdo pases mas rapidos): viene ENCENDIDO. En pausa, Y lo
+    prende o apaga (queda guardado). En la Challenge Cup, ese Y cambia el de
+    la copa.
   - Challenge Super Bowser Cup: en Super Copas, a la derecha de la Super Bowser
     Cup. Cada partido trae una maldicion al azar (nunca la del partido anterior,
     y las que ya salieron tienen menos probabilidad). Con Y activas o desactivas

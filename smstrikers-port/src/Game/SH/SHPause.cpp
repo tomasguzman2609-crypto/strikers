@@ -1,4 +1,5 @@
 #include "port/achievements.h"
+#include "port/mod_challenge.h"
 #include "Game/SH/SHPause.h"
 #include "Game/OverlayManager.h"
 #include "Game/SH/SHLessonSelect.h"
@@ -525,6 +526,14 @@ void PauseMenuScene::Update(float fDeltaT)
     if (g_pFEInput->IsAutoPressed(mControllingInput, 0xe, true, NULL))
     {
         mMenuItems.NextItem();
+        return;
+    }
+
+    // PORT: Y flips the CPU sidekick buffs (the Challenge cup's own switch in one of its matches),
+    // with the accept sound for on and the back sound for off; the overlay's pause panel shows it.
+    if (!FrontEnd::m_bGameOver && g_pFEInput->JustPressed(mControllingInput, 0x800, false, NULL))
+    {
+        FEAudio::PlayAnimAudioEvent(PortModToggleRivalSidekicks() ? "sfx_accept" : "sfx_back", false);
         return;
     }
 

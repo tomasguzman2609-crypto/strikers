@@ -1960,8 +1960,6 @@ void DrawPauseAchievements(void)
 {
     const int count = PortAchievementsCount();
     const int active = PortModChallengeGetActive();
-    if (count == 0 && active == PORT_CHALLENGE_NONE)
-        return;
     const ImGuiIO& io = ImGui::GetIO();
     const float scale = BannerScale();
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 16.0f * scale, io.DisplaySize.y * 0.5f), ImGuiCond_Always,
@@ -1969,6 +1967,24 @@ void DrawPauseAchievements(void)
     ImGui::SetNextWindowBgAlpha(0.8f);
     if (ImGui::Begin("##achievements_pause", nullptr, kBannerFlags))
     {
+        // The CPU sidekick buffs' switch: Y in this menu.
+        {
+            const bool on = PortModExtraRivalSidekicks() != 0;
+            ImGui::SetWindowFontScale(1.3f * scale);
+            ImGui::TextColored(kGrey, "Y: Buff companeros CPU%s:", PortModRivalSidekicksInCup() ? " (esta copa)" : "");
+            ImGui::SameLine();
+            ImGui::TextColored(on ? kGreen : kRed, "%s", on ? "SI" : "NO");
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+        }
+        if (active == PORT_CHALLENGE_NONE && count == 0)
+        {
+            ImGui::SetWindowFontScale(1.0f * scale);
+            ImGui::TextColored(kGrey, "Skips guardados: %d  -  Challenge Mod v1.0", PortModChallengeSkips());
+            ImGui::End();
+            return;
+        }
         if (active != PORT_CHALLENGE_NONE)
         {
             const bool cup = PortChallengeCupCurse() != PORT_CHALLENGE_NONE;

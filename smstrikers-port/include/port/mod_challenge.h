@@ -196,9 +196,15 @@ int PortModChallengeActionBlocked(int padIndex, int action);
 
 // Extras: switches in the companion app that apply on top of (and independently of) the roulette's
 // challenge, kept in mods/extras.txt as "name=0/1" lines and polled along with challenge.txt.
-// "rival_sidekicks": "Compañeros únicos rival" (see Game/RivalSidekicks.h). Non-zero when on, or
-// during a Challenge Super Bowser Cup match with the cup's own switch on.
+// "rival_sidekicks": "Compañeros únicos rival" (see Game/RivalSidekicks.h), on unless the file
+// says rival_sidekicks=0. A Challenge Super Bowser Cup match follows the cup's own switch instead.
 int PortModExtraRivalSidekicks(void);
+
+// The pause menu's switch for those buffs (Y): in a Challenge cup match it flips the cup's own
+// switch, otherwise the general one (saved to mods/extras.txt). Returns the new state (1 = on).
+// PortModRivalSidekicksInCup says which of the two the pause menu is showing.
+int PortModToggleRivalSidekicks(void);
+int PortModRivalSidekicksInCup(void);
 
 // Challenge Super Bowser Cup: the Super Bowser Cup played with a curse drawn for every match (from
 // the pool in mod_challenge.cpp; never the previous match's, and each one's chance halves every

@@ -114,6 +114,7 @@ int ParseChallenge(const std::string& content)
 } // namespace
 
 static int ReadSkips(void);
+static void ReadExtras(void);
 static int g_skipsCached = 0;
 
 extern "C" void PortModChallengeInit(void)
@@ -138,6 +139,7 @@ extern "C" void PortModChallengeInit(void)
         SetSelected(ParseChallenge(content));
     }
     g_skipsCached = ReadSkips();
+    ReadExtras();
 
     // Whatever the last run left behind (e.g. a crash mid-match), no match is being played yet.
     PortModChallengeSetMatchPlaying(0);
@@ -188,12 +190,13 @@ extern "C" void PortModChallengeSetMatchPlaying(int playing)
     }
 }
 
-static int g_extraRivalSidekicks = 0;
+// On unless mods/extras.txt switches it off.
+static int g_extraRivalSidekicks = 1;
 
-// mods/extras.txt: "name=value" lines; a missing file or line means off.
+// mods/extras.txt: "name=value" lines; a missing file or line means the default (rival_sidekicks: on).
 static void ReadExtras(void)
 {
-    int rivalSidekicks = 0;
+    int rivalSidekicks = 1;
     if (FILE* f = fopen((g_modsDir + "/extras.txt").c_str(), "rb"))
     {
         char line[128];
@@ -210,7 +213,11 @@ static void ReadExtras(void)
 
 extern "C" int PortModExtraRivalSidekicks(void)
 {
-    return (g_extraRivalSidekicks || g_cupSidekicksThisMatch) ? 1 : 0;
+    // A Challenge Super Bowser Cup match follows the cup's own switch (Y in the cup menu); every
+    // other match, the general one.
+    if (g_cupCurse != PORT_CHALLENGE_NONE)
+        return g_cupSidekicksThisMatch ? 1 : 0;
+    return g_extraRivalSidekicks ? 1 : 0;
 }
 
 extern "C" void PortModChallengeUpdate(void)
@@ -694,4 +701,34 @@ extern "C" int PortModChallengeUseSkip(void)
     WriteSkips(g_skipsCached);
     g_skipSerial++;
     return 1;
+}
+
+// ---- The rival sidekick buffs' switch, from the pause menu ----
+
+extern "C" int PortModRivalSidekicksInCup(void)
+{
+    return g_cupCurse != PORT_CHALLENGE_NONE ? 1 : 0;
+}
+
+extern "C" int PortModToggleRivalSidekicks(void)
+{
+    if (g_cupCurse != PORT_CHALLENGE_NONE)
+    {
+        // A Challenge cup match: the cup's own switch, for this match and the rest of the cup.
+        const int on = g_cupSidekicksThisMatch ? 0 : 1;
+        PortChallengeCupSetSidekicks(on);
+        g_cupSidekicksThisMatch = on != 0;
+        return on;
+    }
+    // Any other match: the general switch, kept in mods/extras.txt for the next ones too.
+    g_extraRivalSidekicks = g_extraRivalSidekicks ? 0 : 1;
+    if (g_havePath)
+    {
+        if (FILE* f = fopen((g_modsDir + "/extras.txt").c_str(), "wb"))
+        {
+            fprintf(f, "rival_sidekicks=%d\n", g_extraRivalSidekicks);
+            fclose(f);
+        }
+    }
+    return g_extraRivalSidekicks;
 }
