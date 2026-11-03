@@ -5,6 +5,8 @@
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/feScrollText.h"
 #include "Game/GameInfo.h"
+#include "port/mod_challenge.h"
+#include <stdio.h>
 
 #include "NL/gl/glStruct.h"
 #include "NL/nlAlgorithm.h"
@@ -161,6 +163,37 @@ void CupTickerManager::CreateNewMessage()
     if (mTicker == 0)
     {
         return;
+    }
+
+    // PORT: challenge roulette - in a Challenge Super Bowser Cup, every other ticker message is the
+    // cup's record so far: each match's curse and score (once the cup is over, its final summary).
+    if (gameInfo->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP && PortChallengeCupHasResults())
+    {
+        static bool s_bPortCurseTurn = false;
+        s_bPortCurseTurn = !s_bPortCurseTurn;
+        if (s_bPortCurseTurn)
+        {
+            char summary[640];
+            int wins = 0;
+            const int played = PortChallengeCupSummary(summary, sizeof summary, &wins);
+            char message[800];
+            if (!PortChallengeCupFinished())
+            {
+                snprintf(message, sizeof message, "MALDICIONES DE LA COPA (%d de %d ganados):   %s", wins, played, summary);
+            }
+            else if (gameInfo->GetCurrentRoundNumber() == -5 && gameInfo->FindWinningTeam() == gameInfo->GetUserSelectedCupTeam())
+            {
+                snprintf(message, sizeof message, "CAMPEON DE LA CHALLENGE CUP!   %d de %d ganados contra:   %s", wins, played, summary);
+            }
+            else
+            {
+                snprintf(message, sizeof message, "CHALLENGE CUP TERMINADA - %d de %d ganados:   %s", wins, played, summary);
+            }
+            nlStrToWcs(message, mMessageBuffer, 511);
+            mMessageBuffer[511] = 0;
+            mTicker->SetDisplayMessage(WideBasicString(mMessageBuffer));
+            return;
+        }
     }
 
     while (!messageDisplayed)

@@ -446,6 +446,16 @@ struct CupState
     int last = PORT_CHALLENGE_NONE;
     int sidekicks = 0;
     int used[PORT_CHALLENGE_COUNT] = {};
+    // The cup's matches so far, for the cup hub's ticker: the round, its curse and the score (the
+    // human side's goals first). `finished` keeps them shown once the cup is over.
+    struct Result
+    {
+        int round, curse, mine, theirs;
+    };
+    static constexpr int kMaxResults = 16;
+    Result results[kMaxResults] = {};
+    int resultCount = 0;
+    int finished = 0;
 };
 
 CupState g_cup;
@@ -492,6 +502,15 @@ void LoadCup()
             g_cup.last = value;
         else if (sscanf(line, "sidekicks=%d", &value) == 1)
             g_cup.sidekicks = value != 0 ? 1 : 0;
+        else if (sscanf(line, "finished=%d", &value) == 1)
+            g_cup.finished = value != 0 ? 1 : 0;
+        else
+        {
+            CupState::Result r;
+            if (sscanf(line, "result=%d,%d,%d,%d", &r.round, &r.curse, &r.mine, &r.theirs) == 4
+                && g_cup.resultCount < CupState::kMaxResults)
+                g_cup.results[g_cup.resultCount++] = r;
+        }
     }
     fclose(f);
 }
@@ -508,6 +527,10 @@ void SaveCup()
     for (int id = PORT_CHALLENGE_NONE + 1; id < PORT_CHALLENGE_COUNT; id++)
         if (g_cup.used[id] > 0)
             fprintf(f, "used%d=%d\n", id, g_cup.used[id]);
+    fprintf(f, "finished=%d\n", g_cup.finished);
+    for (int i = 0; i < g_cup.resultCount; i++)
+        fprintf(f, "result=%d,%d,%d,%d\n", g_cup.results[i].round, g_cup.results[i].curse, g_cup.results[i].mine,
+                g_cup.results[i].theirs);
     fclose(f);
 }
 
@@ -566,8 +589,67 @@ extern "C" void PortChallengeCupEnd(void)
     if (!g_cup.active)
         return;
     g_cup.active = 0;
+    g_cup.finished = 1;
     g_cup.pending = PORT_CHALLENGE_NONE;
     SaveCup();
+}
+
+extern "C" void PortChallengeCupRecordResult(int mine, int theirs)
+{
+    if (g_cupCurse == PORT_CHALLENGE_NONE)
+        return; // not a Challenge cup match
+    // (The cup may already be marked over: the final's result can close the knockout before the
+    // match reaches GS_END_GAME.)
+    LoadCup();
+    // The round's result, replacing an earlier one for the same round (a replayed match).
+    int slot = -1;
+    for (int i = 0; i < g_cup.resultCount; i++)
+        if (g_cup.results[i].round == g_cup.round)
+            slot = i;
+    if (slot < 0)
+    {
+        if (g_cup.resultCount >= CupState::kMaxResults)
+            return;
+        slot = g_cup.resultCount++;
+    }
+    g_cup.results[slot] = { g_cup.round, g_cupCurse, mine, theirs };
+    SaveCup();
+}
+
+extern "C" int PortChallengeCupHasResults(void)
+{
+    LoadCup();
+    return ((g_cup.active || g_cup.finished) && g_cup.resultCount > 0) ? 1 : 0;
+}
+
+extern "C" int PortChallengeCupFinished(void)
+{
+    LoadCup();
+    return g_cup.finished;
+}
+
+extern "C" int PortChallengeCupSummary(char* buf, int size, int* pWins)
+{
+    LoadCup();
+    int wins = 0;
+    std::string text;
+    for (int i = 0; i < g_cup.resultCount; i++)
+    {
+        const CupState::Result& r = g_cup.results[i];
+        if (r.mine > r.theirs)
+            wins++;
+        char entry[96];
+        snprintf(entry, sizeof entry, "%s%s %d-%d", i > 0 ? "   -   " : "", PortModChallengeName(r.curse), r.mine,
+                 r.theirs);
+        text += entry;
+    }
+    if (pWins != nullptr)
+        *pWins = wins;
+    if (buf != nullptr && size > 0)
+    {
+        snprintf(buf, (size_t)size, "%s", text.c_str());
+    }
+    return g_cup.resultCount;
 }
 
 extern "C" void PortChallengeCupBeginMatch(int inSuperBowserCup, int roundKey)

@@ -1952,6 +1952,16 @@ void cGame::InitGameState(eGameState state)
         // so this fires exactly once per match, not every frame.
         // Achievements are settled first, while the challenge state is still the match's.
         PortAchievementHooksMatchEnd();
+        // PORT: challenge roulette - a Challenge cup match's score goes into the cup's record (the
+        // cup hub's ticker), the human side first.
+        for (int nSide = 0; nSide < 2; nSide++)
+        {
+            if (g_pTeams[nSide] != NULL && PortTeamHasHuman(g_pTeams[nSide]))
+            {
+                PortChallengeCupRecordResult(g_pTeams[nSide]->m_nScore, g_pTeams[nSide]->GetOtherTeam()->m_nScore);
+                break;
+            }
+        }
         PortModChallengeClear();
         PortModChallengeSetMatchPlaying(0);
         break;

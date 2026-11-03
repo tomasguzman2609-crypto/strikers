@@ -42,6 +42,8 @@ EN EL JUEGO
     Cup. Cada partido trae una maldicion al azar (nunca la del partido anterior,
     y las que ya salieron tienen menos probabilidad). Con Y activas o desactivas
     "Buff companeros CPU" para esa copa.
+    En la pantalla de la copa, la barra de noticias muestra cada maldicion con
+    su marcador, y al terminar, el resumen (o "CAMPEON DE LA CHALLENGE CUP!").
     Comparte el espacio de guardado con la Super Bowser Cup normal: si empiezas
     una con la otra a medias, el juego pregunta si quieres sobrescribirla.
 

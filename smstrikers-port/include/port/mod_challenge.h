@@ -228,6 +228,19 @@ int PortChallengeCupCurse(void);
 int PortChallengeCupSidekicks(void);
 void PortChallengeCupSetSidekicks(int on);
 
+// The cup's record, for the cup hub's news ticker (in the game's own font):
+//   - PortChallengeCupRecordResult: at the end of a Challenge cup match, the human side's goals
+//     and the other side's; kept per round (a replayed round replaces its result).
+//   - PortChallengeCupHasResults: non-zero while there is something to show (a Challenge cup in
+//     progress or just finished, with at least one match played).
+//   - PortChallengeCupFinished: the cup is over (won or out); until a new Super Bowser Cup starts.
+//   - PortChallengeCupSummary: "Curse 2-1   -   Curse 0-1 ..." (plain ASCII) into buf, the matches
+//     won into *pWins; returns the number of matches.
+void PortChallengeCupRecordResult(int mine, int theirs);
+int PortChallengeCupHasResults(void);
+int PortChallengeCupFinished(void);
+int PortChallengeCupSummary(char* buf, int size, int* pWins);
+
 // Spending a roulette skip from inside the game, before a match's first kickoff:
 //   - PortModChallengeSkips: how many are banked in mods/skips.txt (refreshed every poll).
 //   - PortModChallengeSetSkipWindow: the game says whether a skip may be spent right now.
