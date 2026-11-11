@@ -8,7 +8,7 @@
 //   - Hammer Bros: regular shots fly 50% faster (same target, shorter flight time).
 //   - Koopa:       spiky shell - a tackle or slide from a team with a real local player comes
 //                  straight back: the Koopa takes it as usual, and the attacker gets the same hit
-//                  or slide too.
+//                  or slide too, for 60% less time (its reaction plays 2.5x as fast).
 //   - Birdo:       passes 40% faster.
 // Teams with a real local player are never affected.
 

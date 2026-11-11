@@ -44,6 +44,9 @@ struct PendingSpike
 };
 
 const int kMaxPending = 4;
+
+// The attacker's reaction to the bounce plays this much faster: 1 / 2.5 = 40% of the time.
+const float kSpikeReactSpeed = 2.5f;
 PendingSpike s_pending[kMaxPending];
 int s_pendingCount = 0;
 
@@ -106,9 +109,11 @@ void PortRivalSidekicksUpdate(bool bPlaying)
         // whistle in between, or anything else having knocked them over already, drops it).
         if (!bPlaying || uNow - spike.uFrame > 3 || pHitter->IsFallenDown(0.0f))
             continue;
+        eFielderActionState eReact;
         if (spike.bSlide)
         {
             pHitter->InitActionSlideAttackReact(spike.pKoopa, false);
+            eReact = ACTION_SLIDE_ATTACK_REACT;
         }
         else
         {
@@ -116,6 +121,13 @@ void PortRivalSidekicksUpdate(bool bPlaying)
             float dy = pHitter->m_v3Position.y - spike.pKoopa->m_v3Position.y;
             unsigned short aAway = (unsigned short)(int)(10430.378f * nlATan2f(dy, dx));
             pHitter->InitActionHitReact(spike.pKoopa, aAway, false);
+            eReact = ACTION_HIT_REACT;
+        }
+        // The bounce knocks the attacker down for 60% less time than a real hit or slide would:
+        // its reaction plays 2.5x as fast (the reaction ends with its animation).
+        if (pHitter->m_eActionState == eReact && pHitter->m_pCurrentAnimController != NULL)
+        {
+            pHitter->m_pCurrentAnimController->m_fPlaybackSpeedScale = kSpikeReactSpeed;
         }
     }
     s_pendingCount = 0;
