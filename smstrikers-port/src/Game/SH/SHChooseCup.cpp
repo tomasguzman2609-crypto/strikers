@@ -17,25 +17,21 @@ unsigned long GetLOCCharacterName(eTeamID, bool, bool);
 static bool s_portChallengeSlot = false;
 
 static const unsigned short* const kPortChallengeCupTitle = (const unsigned short*)L"CHALLENGE SUPER BOWSER CUP";
-// Kept short so the switch below fits; "{p}" starts a new line, "{clr:...}" colours the state.
-static const unsigned short* const kPortChallengeCupDescriptor =
-    (const unsigned short*)L"Torneo con maldiciones aleatorias.";
+// Just the cup's two switches, one per line ("{p}" starts a new line, "{clr:...}" colours the state).
 static const unsigned short* const kPortSidekicksOn =
-    (const unsigned short*)L"{p}Buff companeros CPU: {clr:59C97A}SI{clr:pop}  (Y)";
+    (const unsigned short*)L"Buff companeros CPU: {clr:59C97A}SI{clr:pop}  (Y)";
 static const unsigned short* const kPortSidekicksOff =
-    (const unsigned short*)L"{p}Buff companeros CPU: {clr:FF6B6B}NO{clr:pop}  (Y)";
+    (const unsigned short*)L"Buff companeros CPU: {clr:FF6B6B}NO{clr:pop}  (Y)";
 static const unsigned short* const kPortMixedOn =
     (const unsigned short*)L"{p}Companeros mezclados CPU: {clr:59C97A}SI{clr:pop}  (X)";
 static const unsigned short* const kPortMixedOff =
     (const unsigned short*)L"{p}Companeros mezclados CPU: {clr:FF6B6B}NO{clr:pop}  (X)";
 
-// The Challenge cup's description plus the state of its "Compañeros únicos rival" switch.
+// The Challenge cup's text: the state of its two switches.
 static const unsigned short* PortChallengeCupDescriptor()
 {
     static unsigned short s_buffer[256];
     int n = 0;
-    for (const unsigned short* p = kPortChallengeCupDescriptor; *p != 0 && n < 255; p++)
-        s_buffer[n++] = *p;
     for (const unsigned short* p = PortChallengeCupSidekicks() ? kPortSidekicksOn : kPortSidekicksOff; *p != 0 && n < 255; p++)
         s_buffer[n++] = *p;
     for (const unsigned short* p = PortChallengeCupMixed() ? kPortMixedOn : kPortMixedOff; *p != 0 && n < 255; p++)
