@@ -1,4 +1,5 @@
 #include "Game/NisPlayer.h"
+#include "Game/RivalSidekicks.h"
 #include <stdlib.h>
 #include "Game/Camera/CameraMan.h"
 #include "Game/Character.h"
@@ -846,6 +847,9 @@ void NisPlayer::EventHandler(Event* event)
             if (!goalScoredData->pLastTouch[goalScoredData->uTeamIndex]->IsCaptain())
             {
                 mGoalScorerCharIndex = GetCharacterIndex(goalScoredData->pLastTouch[goalScoredData->uTeamIndex]);
+                // PORT: "Companeros mezclados" - a sidekick of another kind than its team's leaves the
+                // celebration to its team's own-kind sidekick (the cutscene is made for that kind).
+                mGoalScorerCharIndex = PortNisGoalScorerIndex(mGoalScorerCharIndex);
             }
         }
     }

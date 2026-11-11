@@ -46,4 +46,11 @@ void PortRivalSidekicksReset();
 eCharacterClass PortMixedSidekickClass(int nSide, int nIndex, eCharacterClass eOfficial);
 void PortMixedSidekicksReset();
 
+// Cutscenes with mixed sidekicks: their sidekick animations are made for the team's own kind.
+// PortNisCharacterFits is false for a sidekick of another kind (it takes no part in the cutscene);
+// PortNisGoalScorerIndex gives the character to celebrate a goal by character nCharIndex (the team's
+// own-kind sidekick in place of another kind's), -1 for none.
+bool PortNisCharacterFits(int nCharIndex);
+int PortNisGoalScorerIndex(int nCharIndex);
+
 #endif // _RIVALSIDEKICKS_H_

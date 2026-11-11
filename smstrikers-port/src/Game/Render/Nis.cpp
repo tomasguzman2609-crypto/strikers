@@ -6,6 +6,7 @@ extern "C" unsigned long port_cam_swap(void*, unsigned long);
 #include "NL/vmath.h"
 #include "Game/ReplayManager.h"
 #include "Game/NisPlayer.h"
+#include "Game/RivalSidekicks.h"
 #include "Game/Sys/audio.h"
 #include "Game/Sys/GCStream.h"
 #include "Game/Audio/AudioStream.h"
@@ -95,6 +96,12 @@ Nis::Nis(NisHeader& header, char* data, int size)
                     if (mCharacterControllers[i] == NULL)
                         break;
                 }
+            }
+            // PORT: "Companeros mezclados" - a sidekick of another kind than its team's gets no
+            // animation made for that kind's skeleton: it sits the cutscene out (not drawn).
+            if (i < 10 && !PortNisCharacterFits(i))
+            {
+                i = 10;
             }
             if (i < 10)
             {
@@ -384,6 +391,10 @@ void Nis::Trigger::FireEffect(const Nis& nis) const
             charIdx = NisPlayer::Instance()->TargetToIndex(nis.mTarget, idx, nis.mWinnerType);
         }
         if (charIdx >= 10)
+            return;
+        // PORT: no effect on a character with no animation in this cutscene (a sidekick of another
+        // kind sitting it out under "Companeros mezclados").
+        if (charIdx < 0 || nis.mCharacterControllers[charIdx] == NULL)
             return;
 
         EffectsGroup* group = fxGetGroup(name);

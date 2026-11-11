@@ -7,6 +7,8 @@
 #include "NL/nlMath.h"
 #include "port/mod_challenge.h"
 #include "Game/GameInfo.h"
+#include "Game/CharacterTemplate.h"
+#include "Game/FE/feHelpFuncs.h"
 
 namespace
 {
@@ -207,4 +209,52 @@ eCharacterClass PortMixedSidekickClass(int nSide, int nIndex, eCharacterClass eO
 void PortMixedSidekicksReset()
 {
     s_bMixDrawn[0] = s_bMixDrawn[1] = false;
+}
+
+// ---- Mixed sidekicks in cutscenes ----
+//
+// A cutscene's sidekick animations are made for the team's own sidekick kind (the cutscene is picked
+// by that kind's name). Played on a sidekick of another kind's skeleton they would come out broken,
+// or worse, so such a sidekick takes no part in the cutscene (it isn't drawn), and a goal it scored
+// is celebrated by its team's sidekick of the team's own kind.
+
+namespace
+{
+
+// True for a sidekick of a mixed team that isn't of its team's own kind.
+bool IsOffKindSidekick(int nCharIndex)
+{
+    if (nCharIndex < 0 || nCharIndex >= 10 || g_pCharacters[nCharIndex] == NULL)
+        return false;
+    cPlayer* pPlayer = (cPlayer*)g_pCharacters[nCharIndex];
+    if (pPlayer->m_eClassType != FIELDER || pPlayer->IsCaptain() || pPlayer->m_pTeam == NULL)
+        return false;
+    const eCharacterClass eOwn = pPlayer->m_eCharacterClass;
+    const eCharacterClass eTeam = ConvertToCharacterClass(nlSingleton<GameInfoManager>::Instance()->GetSidekick((short)pPlayer->m_pTeam->m_nSide));
+    return eOwn != eTeam && IsMixableSidekick(eOwn) && IsMixableSidekick(eTeam);
+}
+
+} // namespace
+
+bool PortNisCharacterFits(int nCharIndex)
+{
+    return !IsOffKindSidekick(nCharIndex);
+}
+
+int PortNisGoalScorerIndex(int nCharIndex)
+{
+    if (!IsOffKindSidekick(nCharIndex))
+        return nCharIndex;
+    // The sidekick of the team's own kind celebrates in its place.
+    cPlayer* pScorer = (cPlayer*)g_pCharacters[nCharIndex];
+    for (int i = 0; i < 10; i++)
+    {
+        if (i == nCharIndex || g_pCharacters[i] == NULL)
+            continue;
+        cPlayer* pPlayer = (cPlayer*)g_pCharacters[i];
+        if (pPlayer->m_pTeam == pScorer->m_pTeam && pPlayer->m_eClassType == FIELDER && !pPlayer->IsCaptain()
+            && !IsOffKindSidekick(i))
+            return i;
+    }
+    return -1; // none: the cutscene's own choice stands
 }
