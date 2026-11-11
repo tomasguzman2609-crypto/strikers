@@ -174,7 +174,12 @@ eCharacterClass PortMixedSidekickClass(int nSide, int nIndex, eCharacterClass eO
         s_bMixDrawn[nSide] = true;
         for (int i = 0; i < 4; i++)
             s_aMix[nSide][i] = eOfficial;
-        if (PortModExtraMixedSidekicks() && IsMixableSidekick(eOfficial) && !SideHasHumanPad(nSide))
+        // A Challenge Super Bowser Cup match follows the cup's own switch; any other, the general one.
+        GameInfoManager* pInfo = nlSingleton<GameInfoManager>::Instance();
+        const bool bMixed = (pInfo->GetCurrentMode() == GameInfoManager::GM_SUPER_BOWSER_CUP && PortChallengeCupIsActive())
+            ? PortChallengeCupMixed() != 0
+            : PortModExtraMixedSidekicks() != 0;
+        if (bMixed && IsMixableSidekick(eOfficial) && !SideHasHumanPad(nSide))
         {
             // The first stays the team's own kind (its cutscenes and voices are built around it);
             // the other two are two different other kinds.

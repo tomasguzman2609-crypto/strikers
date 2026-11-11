@@ -114,6 +114,8 @@ int ParseChallenge(const std::string& content)
 } // namespace
 
 static int ReadSkips(void);
+extern "C" int PortChallengeCupMixed(void);
+extern "C" void PortChallengeCupSetMixed(int on);
 static void ReadExtras(void);
 static int g_skipsCached = 0;
 
@@ -236,9 +238,21 @@ extern "C" int PortModExtraMixedSidekicks(void)
 
 extern "C" int PortModToggleMixedSidekicks(void)
 {
+    // In a Challenge cup match: the cup's own switch (its next matches).
+    if (g_cupCurse != PORT_CHALLENGE_NONE)
+    {
+        const int on = PortChallengeCupMixed() ? 0 : 1;
+        PortChallengeCupSetMixed(on);
+        return on;
+    }
     g_extraMixedSidekicks = g_extraMixedSidekicks ? 0 : 1;
     WriteExtras();
     return g_extraMixedSidekicks;
+}
+
+extern "C" int PortModMixedSidekicksShown(void)
+{
+    return g_cupCurse != PORT_CHALLENGE_NONE ? PortChallengeCupMixed() : g_extraMixedSidekicks;
 }
 
 extern "C" int PortModExtraRivalSidekicks(void)
@@ -475,6 +489,7 @@ struct CupState
     int pending = PORT_CHALLENGE_NONE;
     int last = PORT_CHALLENGE_NONE;
     int sidekicks = 0;
+    int mixed = 0; // the cup's own "Companeros mezclados" switch
     int used[PORT_CHALLENGE_COUNT] = {};
     // The cup's matches so far, for the cup hub's ticker: the round, its curse and the score (the
     // human side's goals first). `finished` keeps them shown once the cup is over.
@@ -532,6 +547,8 @@ void LoadCup()
             g_cup.last = value;
         else if (sscanf(line, "sidekicks=%d", &value) == 1)
             g_cup.sidekicks = value != 0 ? 1 : 0;
+        else if (sscanf(line, "mixed=%d", &value) == 1)
+            g_cup.mixed = value != 0 ? 1 : 0;
         else if (sscanf(line, "finished=%d", &value) == 1)
             g_cup.finished = value != 0 ? 1 : 0;
         else
@@ -557,7 +574,7 @@ void SaveCup()
     for (int id = PORT_CHALLENGE_NONE + 1; id < PORT_CHALLENGE_COUNT; id++)
         if (g_cup.used[id] > 0)
             fprintf(f, "used%d=%d\n", id, g_cup.used[id]);
-    fprintf(f, "finished=%d\n", g_cup.finished);
+    fprintf(f, "finished=%d\nmixed=%d\n", g_cup.finished, g_cup.mixed);
     for (int i = 0; i < g_cup.resultCount; i++)
         fprintf(f, "result=%d,%d,%d,%d\n", g_cup.results[i].round, g_cup.results[i].curse, g_cup.results[i].mine,
                 g_cup.results[i].theirs);
@@ -604,8 +621,10 @@ extern "C" void PortChallengeCupStart(int challenge)
 {
     LoadCup();
     const int sidekicks = g_cup.sidekicks;
+    const int mixed = g_cup.mixed;
     g_cup = CupState();
     g_cup.sidekicks = sidekicks;
+    g_cup.mixed = mixed;
     g_cup.active = challenge != 0 ? 1 : 0;
     // The first match's curse is drawn up front, so the companion app can show it (and skip it).
     if (g_cup.active)
@@ -836,4 +855,17 @@ extern "C" int PortModToggleRivalSidekicks(void)
     g_extraRivalSidekicks = g_extraRivalSidekicks ? 0 : 1;
     WriteExtras();
     return g_extraRivalSidekicks;
+}
+
+extern "C" int PortChallengeCupMixed(void)
+{
+    LoadCup();
+    return g_cup.mixed;
+}
+
+extern "C" void PortChallengeCupSetMixed(int on)
+{
+    LoadCup();
+    g_cup.mixed = on != 0 ? 1 : 0;
+    SaveCup();
 }

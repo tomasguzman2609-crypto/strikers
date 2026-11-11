@@ -24,6 +24,10 @@ static const unsigned short* const kPortSidekicksOn =
     (const unsigned short*)L"{p}Buff companeros CPU: {clr:59C97A}SI{clr:pop}  (Y)";
 static const unsigned short* const kPortSidekicksOff =
     (const unsigned short*)L"{p}Buff companeros CPU: {clr:FF6B6B}NO{clr:pop}  (Y)";
+static const unsigned short* const kPortMixedOn =
+    (const unsigned short*)L"{p}Companeros mezclados CPU: {clr:59C97A}SI{clr:pop}  (X)";
+static const unsigned short* const kPortMixedOff =
+    (const unsigned short*)L"{p}Companeros mezclados CPU: {clr:FF6B6B}NO{clr:pop}  (X)";
 
 // The Challenge cup's description plus the state of its "Compañeros únicos rival" switch.
 static const unsigned short* PortChallengeCupDescriptor()
@@ -33,6 +37,8 @@ static const unsigned short* PortChallengeCupDescriptor()
     for (const unsigned short* p = kPortChallengeCupDescriptor; *p != 0 && n < 255; p++)
         s_buffer[n++] = *p;
     for (const unsigned short* p = PortChallengeCupSidekicks() ? kPortSidekicksOn : kPortSidekicksOff; *p != 0 && n < 255; p++)
+        s_buffer[n++] = *p;
+    for (const unsigned short* p = PortChallengeCupMixed() ? kPortMixedOn : kPortMixedOff; *p != 0 && n < 255; p++)
         s_buffer[n++] = *p;
     s_buffer[n] = 0;
     return s_buffer;
@@ -460,6 +466,21 @@ void ChooseCupSceneV2::Update(float fDeltaT)
     {
         const bool bOn = PortChallengeCupSidekicks() == 0;
         PortChallengeCupSetSidekicks(bOn ? 1 : 0);
+        FEAudio::PlayAnimAudioEvent(bOn ? "sfx_accept" : "sfx_back", false);
+        TLTextInstance* pDescriptor = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            activeSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("DESCRIPTOR")));
+        if (pDescriptor != NULL)
+            pDescriptor->SetString(PortChallengeCupDescriptor());
+        return;
+    }
+
+    // PORT: X on the Challenge cup flips its "Companeros mezclados" switch, the same way.
+    if (s_portChallengeSlot && g_pFEInput->JustPressed(FE_ALL_PADS, 0x400, false, NULL))
+    {
+        const bool bOn = PortChallengeCupMixed() == 0;
+        PortChallengeCupSetMixed(bOn ? 1 : 0);
         FEAudio::PlayAnimAudioEvent(bOn ? "sfx_accept" : "sfx_back", false);
         TLTextInstance* pDescriptor = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             activeSlide,
