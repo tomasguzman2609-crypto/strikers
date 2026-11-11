@@ -206,6 +206,11 @@ int PortModExtraRivalSidekicks(void);
 int PortModToggleRivalSidekicks(void);
 int PortModRivalSidekicksInCup(void);
 
+// "mixed_sidekicks" in mods/extras.txt (off by default): a CPU-only team's three sidekicks are of
+// different kinds (see Game/RivalSidekicks.h). X in the pause menu flips it, for the next match.
+int PortModExtraMixedSidekicks(void);
+int PortModToggleMixedSidekicks(void);
+
 // Challenge Super Bowser Cup: the Super Bowser Cup played with a curse drawn for every match (from
 // the pool in mod_challenge.cpp; never the previous match's, and each one's chance halves every
 // time it comes up). It shares the Super Bowser Cup's save slot; mods/challenge_cup.txt remembers

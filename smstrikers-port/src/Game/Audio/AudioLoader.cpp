@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "NL/nlAVLTree.h"
 #include "Game/Audio/AudioLoader.h"
+#include "Game/RivalSidekicks.h"
 #include "Game/Audio/AudioStream.h"
 #include "Game/Audio/PriorityStream.h"
 #include "Game/Audio/SebringSoundDefines.h"
@@ -1609,7 +1610,15 @@ void AudioLoader::SetupCharStadiumSoundTable()
             }
             else
             {
-                if (team == 0)
+                // PORT: "Companeros mezclados" - a sidekick of another kind than its team's uses
+                // its own kind's sounds.
+                const eCharacterClass eTeamSidekick = (team == 0) ? homeSidekickClass : awaySidekickClass;
+                const eCharacterClass eOwn = ((cCharacter*)pPlayer)->m_eCharacterClass;
+                if (eOwn != eTeamSidekick && (eOwn == TOAD || eOwn == KOOPA || eOwn == HAMMERBROS || eOwn == BIRDO))
+                {
+                    pPlayer->m_pCharacterSFX->SetSFX(GetSoundPropTableFromPlayerStadium(stadium, eOwn));
+                }
+                else if (team == 0)
                 {
                     pPlayer->m_pCharacterSFX->SetSFX(homeSidekickPropTable);
                 }
@@ -2159,6 +2168,32 @@ bool AudioLoader::LoadInGameAudioData()
             {
                 tDebugPrintManager::Print(DC_SOUND, "Could not load away sidekick sound group %d onto secondary sound stack.\n", gLoadedAwaySidekickGroup);
                 return false;
+            }
+        }
+    }
+
+    // PORT: "Companeros mezclados" - the sound groups of a CPU team's other sidekick kinds, as far
+    // as the sound stack has room; one that doesn't fit only leaves that sidekick quiet.
+    for (int side = 0; side < 2 && !gbDisableAudio && AudioLoader::IsInited(); side++)
+    {
+        const eCharacterClass eOfficial = (side == 0) ? homeSidekickClass : awaySidekickClass;
+        for (int index = 1; index < 4; index++)
+        {
+            int group;
+            switch (PortMixedSidekickClass(side, index, eOfficial))
+            {
+            case HAMMERBROS: group = 0x21; break;
+            case TOAD: group = 0x20; break;
+            case BIRDO: group = 0x1e; break;
+            case KOOPA: group = 0x1f; break;
+            default: group = -1; break;
+            }
+            if (group >= 0 && !AudioLoader::IsSoundGroupLoaded(group, 1))
+            {
+                if (!PlatAudio::LoadSoundGroup(sebringAudioFileData, group, 1, true))
+                {
+                    tDebugPrintManager::Print(DC_SOUND, "Mixed sidekicks: no room for sound group %d.\n", group);
+                }
             }
         }
     }

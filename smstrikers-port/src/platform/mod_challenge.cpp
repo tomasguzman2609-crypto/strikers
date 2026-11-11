@@ -192,11 +192,25 @@ extern "C" void PortModChallengeSetMatchPlaying(int playing)
 
 // On unless mods/extras.txt switches it off.
 static int g_extraRivalSidekicks = 1;
+// Off unless mods/extras.txt switches it on.
+static int g_extraMixedSidekicks = 0;
+
+static void WriteExtras(void)
+{
+    if (!g_havePath)
+        return;
+    if (FILE* f = fopen((g_modsDir + "/extras.txt").c_str(), "wb"))
+    {
+        fprintf(f, "rival_sidekicks=%d\nmixed_sidekicks=%d\n", g_extraRivalSidekicks, g_extraMixedSidekicks);
+        fclose(f);
+    }
+}
 
 // mods/extras.txt: "name=value" lines; a missing file or line means the default (rival_sidekicks: on).
 static void ReadExtras(void)
 {
     int rivalSidekicks = 1;
+    int mixedSidekicks = 0;
     if (FILE* f = fopen((g_modsDir + "/extras.txt").c_str(), "rb"))
     {
         char line[128];
@@ -205,10 +219,26 @@ static void ReadExtras(void)
             const char* key = "rival_sidekicks=";
             if (strncmp(line, key, strlen(key)) == 0)
                 rivalSidekicks = atoi(line + strlen(key)) != 0 ? 1 : 0;
+            const char* mixedKey = "mixed_sidekicks=";
+            if (strncmp(line, mixedKey, strlen(mixedKey)) == 0)
+                mixedSidekicks = atoi(line + strlen(mixedKey)) != 0 ? 1 : 0;
         }
         fclose(f);
     }
     g_extraRivalSidekicks = rivalSidekicks;
+    g_extraMixedSidekicks = mixedSidekicks;
+}
+
+extern "C" int PortModExtraMixedSidekicks(void)
+{
+    return g_extraMixedSidekicks;
+}
+
+extern "C" int PortModToggleMixedSidekicks(void)
+{
+    g_extraMixedSidekicks = g_extraMixedSidekicks ? 0 : 1;
+    WriteExtras();
+    return g_extraMixedSidekicks;
 }
 
 extern "C" int PortModExtraRivalSidekicks(void)
@@ -804,13 +834,6 @@ extern "C" int PortModToggleRivalSidekicks(void)
     }
     // Any other match: the general switch, kept in mods/extras.txt for the next ones too.
     g_extraRivalSidekicks = g_extraRivalSidekicks ? 0 : 1;
-    if (g_havePath)
-    {
-        if (FILE* f = fopen((g_modsDir + "/extras.txt").c_str(), "wb"))
-        {
-            fprintf(f, "rival_sidekicks=%d\n", g_extraRivalSidekicks);
-            fclose(f);
-        }
-    }
+    WriteExtras();
     return g_extraRivalSidekicks;
 }

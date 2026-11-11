@@ -12,6 +12,8 @@
 //   - Birdo:       passes 40% faster.
 // Teams with a real local player are never affected.
 
+#include "Game/Character.h"
+
 class cFielder;
 class cPlayer;
 
@@ -35,5 +37,13 @@ void PortRivalSidekicksUpdate(bool bPlaying);
 
 // Forgets any queued bounce; at the start of every match.
 void PortRivalSidekicksReset();
+
+// "Companeros mezclados" (mods/extras.txt mixed_sidekicks, X in the pause menu): a CPU-only team's
+// three sidekicks are of different kinds, one of them the team's own (so its cutscenes and sound
+// set are there) and two others drawn at random. The kind for sidekick nIndex (1-3) of side nSide,
+// given the team's own kind; drawn once per match, so the sound loading and the character creation
+// agree. PortMixedSidekicksReset forgets the draw when a match's characters are destroyed.
+eCharacterClass PortMixedSidekickClass(int nSide, int nIndex, eCharacterClass eOfficial);
+void PortMixedSidekicksReset();
 
 #endif // _RIVALSIDEKICKS_H_

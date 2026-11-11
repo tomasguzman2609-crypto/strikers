@@ -38,6 +38,10 @@ EN EL JUEGO
     con espinas, Birdo pases mas rapidos): viene ENCENDIDO. En pausa, Y lo
     prende o apaga (queda guardado). En la Challenge Cup, ese Y cambia el de
     la copa.
+    El Koopa devuelve el golpe, pero tu jugador queda en el suelo 60% menos.
+  - Companeros mezclados CPU: los 3 companeros de la CPU son de tipos
+    distintos (ej. Toad + Koopa + Birdo). Viene APAGADO. En pausa, X lo prende
+    o apaga; se aplica desde el proximo partido.
   - Challenge Super Bowser Cup: en Super Copas, a la derecha de la Super Bowser
     Cup. Cada partido trae una maldicion al azar (nunca la del partido anterior,
     y las que ya salieron tienen menos probabilidad). Con Y activas o desactivas

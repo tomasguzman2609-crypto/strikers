@@ -1,4 +1,5 @@
 #include "Game/CharacterTemplate.h"
+#include "Game/RivalSidekicks.h"
 #include "Game/SHierarchy.h"
 #include "Game/SAnim/AnimRetargeter.h"
 #include "Game/Player.h"
@@ -626,13 +627,17 @@ void CreateCharacters()
 
         for (int index = 1; index < 4; index++)
         {
+            // PORT: "Companeros mezclados" - a CPU team's sidekicks can each be of a different kind.
+            const eCharacterClass eSidekickClass = SameCharacterClass(sidekick, captain, plrindex)
+                ? sidekick[plrindex]
+                : PortMixedSidekickClass(plrindex, index, sidekick[plrindex]);
             if (SameCharacterClass(sidekick, captain, plrindex))
             {
                 g_pCharacters[charIdx] = CreateCharacter(index, plrindex, captain[plrindex], false);
             }
             else
             {
-                g_pCharacters[charIdx] = (cCharacter*)CreateSidekick(index, plrindex, sidekick[plrindex], captain[plrindex], false);
+                g_pCharacters[charIdx] = (cCharacter*)CreateSidekick(index, plrindex, eSidekickClass, captain[plrindex], false);
             }
 
             g_pCharacters[charIdx]->SetPosition(pos[charIdx]);
@@ -654,6 +659,9 @@ void CreateCharacters()
 void DestroyCharacters()
 {
     int i;
+
+    // PORT: the next match draws its own mix of sidekicks.
+    PortMixedSidekicksReset();
 
     delete g_pAnimScriptInterp;
     g_pAnimScriptInterp = NULL;

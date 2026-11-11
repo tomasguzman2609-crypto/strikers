@@ -537,6 +537,14 @@ void PauseMenuScene::Update(float fDeltaT)
         return;
     }
 
+    // PORT: X flips "Companeros mezclados" (a CPU team's sidekicks of different kinds) for the next
+    // match: the characters are built when a match loads.
+    if (!FrontEnd::m_bGameOver && g_pFEInput->JustPressed(mControllingInput, 0x400, false, NULL))
+    {
+        FEAudio::PlayAnimAudioEvent(PortModToggleMixedSidekicks() ? "sfx_accept" : "sfx_back", false);
+        return;
+    }
+
     if (g_pFEInput->JustPressed(mControllingInput, 0x100, false, &mQuittingController))
     {
         switch (mMenuItems.RunCallbackOnCurrent(ON_APPLY))

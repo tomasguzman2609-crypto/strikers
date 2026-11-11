@@ -6,6 +6,7 @@
 #include "Game/Team.h"
 #include "NL/nlMath.h"
 #include "port/mod_challenge.h"
+#include "Game/GameInfo.h"
 
 namespace
 {
@@ -136,4 +137,69 @@ void PortRivalSidekicksUpdate(bool bPlaying)
 void PortRivalSidekicksReset()
 {
     s_pendingCount = 0;
+}
+
+// ---- "Companeros mezclados" ----
+
+namespace
+{
+
+bool s_bMixDrawn[2] = { false, false };
+eCharacterClass s_aMix[2][4];
+
+bool SideHasHumanPad(int nSide)
+{
+    GameInfoManager* pInfo = nlSingleton<GameInfoManager>::Instance();
+    for (unsigned short pad = 0; pad < 4; pad++)
+        if (pInfo->GetPlayingSide(pad) == nSide)
+            return true;
+    return false;
+}
+
+bool IsMixableSidekick(eCharacterClass eClass)
+{
+    return eClass == TOAD || eClass == KOOPA || eClass == HAMMERBROS || eClass == BIRDO;
+}
+
+} // namespace
+
+eCharacterClass PortMixedSidekickClass(int nSide, int nIndex, eCharacterClass eOfficial)
+{
+    if (nSide < 0 || nSide > 1 || nIndex < 1 || nIndex > 3)
+        return eOfficial;
+    if (!s_bMixDrawn[nSide])
+    {
+        // Drawn once per match, the first time either the sound loading or the character creation
+        // asks, so both see the same three.
+        s_bMixDrawn[nSide] = true;
+        for (int i = 0; i < 4; i++)
+            s_aMix[nSide][i] = eOfficial;
+        if (PortModExtraMixedSidekicks() && IsMixableSidekick(eOfficial) && !SideHasHumanPad(nSide))
+        {
+            // The first stays the team's own kind (its cutscenes and voices are built around it);
+            // the other two are two different other kinds.
+            eCharacterClass aOthers[3];
+            int nOthers = 0;
+            const eCharacterClass aAll[4] = { TOAD, KOOPA, HAMMERBROS, BIRDO };
+            for (int i = 0; i < 4; i++)
+                if (aAll[i] != eOfficial)
+                    aOthers[nOthers++] = aAll[i];
+            const int nSkip = nlRandom(3, &nlDefaultSeed); // the one of the three left out
+            int nOut = 2;
+            for (int i = 0; i < 3 && nOut <= 3; i++)
+                if (i != nSkip)
+                    s_aMix[nSide][nOut++] = aOthers[i];
+            // And the order shuffled, so the team's own kind isn't always in the same spot.
+            const int nSwap = 1 + nlRandom(3, &nlDefaultSeed);
+            eCharacterClass eTmp = s_aMix[nSide][1];
+            s_aMix[nSide][1] = s_aMix[nSide][nSwap];
+            s_aMix[nSide][nSwap] = eTmp;
+        }
+    }
+    return s_aMix[nSide][nIndex];
+}
+
+void PortMixedSidekicksReset()
+{
+    s_bMixDrawn[0] = s_bMixDrawn[1] = false;
 }

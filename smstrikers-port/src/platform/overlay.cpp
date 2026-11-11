@@ -1974,6 +1974,12 @@ void DrawPauseAchievements(void)
             ImGui::TextColored(kGrey, "Y: Buff companeros CPU%s:", PortModRivalSidekicksInCup() ? " (esta copa)" : "");
             ImGui::SameLine();
             ImGui::TextColored(on ? kGreen : kRed, "%s", on ? "SI" : "NO");
+            const bool mixed = PortModExtraMixedSidekicks() != 0;
+            ImGui::TextColored(kGrey, "X: Companeros mezclados CPU:");
+            ImGui::SameLine();
+            ImGui::TextColored(mixed ? kGreen : kRed, "%s", mixed ? "SI" : "NO");
+            ImGui::SameLine();
+            ImGui::TextColored(kGrey, "(proximo partido)");
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
