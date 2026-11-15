@@ -450,6 +450,8 @@ void Nis::Trigger::Fire(Nis& nis) const
         uintptr_t index;   /* PORT: may hold an SFXEmitter* */
         bool isEmitter;
         bool stopAtNisEnd;
+        // PORT: which voice each cutscene plays, in strikers-log.txt (STRIKERS_LOG=1).
+        OSReport("[nis-sfx] %s: %s class=%ld\n", nis.mHeader != NULL ? nis.mHeader->name : "?", name != NULL ? name : "?", (long)params.param1);
         float volume = params.float1;
         unsigned long soundType = (unsigned long)-1;
         isEmitter = false;
@@ -493,6 +495,7 @@ void Nis::Trigger::Fire(Nis& nis) const
     {
         uintptr_t index;   /* PORT: may hold an SFXEmitter* */
         bool stopAtNisEnd;
+        OSReport("[nis-dialogue] %s: type=%ld class=%ld\n", nis.mHeader != NULL ? nis.mHeader->name : "?", (long)params.param2, (long)params.param1);
         unsigned long soundType = (unsigned long)-1;
         index = Audio::cCharacterSFX::PlayNISRandomCharDialogue((CharDialogueType)params.param2, (NisCharacterClass)params.param1, 100.0f, -1.0f, true, &ReplayManager::Instance()->GetMutableRenderSnapshot().GetCharacter(nis.mAudioCharacterIndex).mBip01Position, &ReplayManager::Instance()->GetMutableRenderSnapshot().GetCharacter(nis.mAudioCharacterIndex).mVelocity, &soundType);
         stopAtNisEnd = true;

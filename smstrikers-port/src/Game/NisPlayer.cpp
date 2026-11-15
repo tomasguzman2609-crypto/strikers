@@ -370,6 +370,9 @@ bool NisPlayer::Play()
         delete mPlaying[j];
         mPlaying[j] = mLoaded[j];
         mLoaded[j] = NULL;
+        // PORT: each cutscene as it starts, in strikers-log.txt (STRIKERS_LOG=1).
+        if (mPlaying[j] != NULL && mPlaying[j]->mHeader != NULL)
+            OSReport("[nis-play] %s target=%d\n", mPlaying[j]->mHeader->name, (int)mPlaying[j]->mHeader->target);
     }
 
     EmissionManager::Destroy( reinterpret_cast<uintptr_t>(this), NULL);
