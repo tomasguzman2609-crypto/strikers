@@ -691,10 +691,35 @@ extern "C" void PortCustomSFXStopTag(uintptr_t tag)
             v.clip = nullptr;
 }
 
+// The Super Team's pre-match intro: Extroyer_Entrada plays once for the whole intro, in place of
+// the Super Team's own entrance and attitude lines (SFXCHAR_SUPER_NIS_Enter_Home/Away_01,
+// SFXCHAR_SUPER_NIS_Attitude_01), whichever the game plays first; the rest of that intro's lines
+// stay silent. Without the clip (missing, or switched off in sonidos.txt) the game's own play.
+static std::chrono::steady_clock::time_point g_superIntroUntil;
+
+static bool IsSuperTeamIntroLine(const std::string& name)
+{
+    return name.compare(0, 23, "SFXCHAR_SUPER_NIS_Enter") == 0 ||
+           name.compare(0, 26, "SFXCHAR_SUPER_NIS_Attitude") == 0;
+}
+
+extern "C" int PortCustomSFXSuperTeamIntro(void)
+{
+    const auto now = std::chrono::steady_clock::now();
+    if (now < g_superIntroUntil)
+        return 1; // this intro's clip already played
+    if (!PlayInternal("Extroyer_Entrada", kVoiceLineMinScale))
+        return 0;
+    g_superIntroUntil = now + std::chrono::seconds(25);
+    return 1;
+}
+
 extern "C" int PortCustomSFXReplace(unsigned long sfxID)
 {
     if (sfxID >= g_soundNames.size() || g_soundNames[sfxID].empty())
         return 0;
+    if (IsSuperTeamIntroLine(g_soundNames[sfxID]))
+        return PortCustomSFXSuperTeamIntro();
     if (!g_mutes.empty() && IsMutedNow(g_soundNames[sfxID]))
         return 1;
     if (IsModMomentClip(g_soundNames[sfxID]))
