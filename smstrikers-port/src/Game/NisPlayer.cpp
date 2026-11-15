@@ -10,6 +10,9 @@
 #include "Game/GameInfo.h"
 #include "Game/Goalie.h"
 #include "Game/ReplayManager.h"
+#include "Game/CharacterTriggers.h"
+#include "Game/Render/Presentation.h"
+#include "Game/Team.h"
 #include "NL/nlConfig.h"
 #include "NL/nlDebug.h"
 #include "NL/nlFileGC.h"
@@ -345,6 +348,34 @@ void NisPlayer::Reset()
 /**
  * Offset/Address/Size: 0x2AD4 | 0x801177B0 | size: 0x1F8
  */
+// PORT: the Super Team's own intro clip (PortSuperTeamIntro) as its pre-match attitude scene
+// starts: a scene of the match's opening presentation that's about the Super Team captain, by
+// its target (the home or away captain, on a Super Team side) or by its name (the scenes made
+// for the Super Team are named after it, "mystery...").
+static void PortSuperTeamIntroIfStarting(Nis* const* playing)
+{
+    if (nlStrCmp<char>(Presentation::Instance().mCurrentFunction, "GameBegin") != 0)
+        return;
+    GameInfoManager* info = nlSingleton<GameInfoManager>::Instance();
+    for (int j = 0; j < 4; j++)
+    {
+        const Nis* nis = playing[j];
+        if (nis == NULL || nis->mHeader == NULL)
+            continue;
+        const NisTarget target = nis->mHeader->target;
+        bool bSuper = strncmp(nis->mHeader->name, "mystery", 7) == 0;
+        if (target == NIS_TARGET_HOME_CAPTAIN)
+            bSuper = bSuper || info->GetTeam(0) == TEAM_MYSTERY;
+        else if (target == NIS_TARGET_AWAY_CAPTAIN)
+            bSuper = bSuper || info->GetTeam(1) == TEAM_MYSTERY;
+        if (bSuper)
+        {
+            PortSuperTeamIntro();
+            return;
+        }
+    }
+}
+
 bool NisPlayer::Play()
 {
     int i;
@@ -371,6 +402,8 @@ bool NisPlayer::Play()
         mPlaying[j] = mLoaded[j];
         mLoaded[j] = NULL;
     }
+
+    PortSuperTeamIntroIfStarting(mPlaying);
 
     EmissionManager::Destroy( reinterpret_cast<uintptr_t>(this), NULL);
 

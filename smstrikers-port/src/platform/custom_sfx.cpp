@@ -491,10 +491,12 @@ extern "C" void PortCustomSFXInit(void)
 // on any charged shot, SFXCHAR_BOWSER_Activate when Bowser shows up, ...): a sonidos.txt line for
 // one only ever sets the file and volume of the mod's own moment, never those.
 static const char* const kModClips[] = {
-    // Super Team: charging a shot, the kick, a goal celebration (Game/CharacterTriggers.cpp).
+    // Super Team: charging a shot, the kick, a goal celebration, the pre-match intro
+    // (Game/CharacterTriggers.cpp).
     "Extroyer_Cargar_Tiro",
     "Extroyer_Pegar_Pelota",
     "celebracion_extroyer",
+    "Extroyer_Entrada",
     "SFXBALL_Post_Metal",
     "SFXCHAR_BOWSER_Activate",
     "SFXCHAR_DAISY_EFFORTS_Kick_Super_01",
