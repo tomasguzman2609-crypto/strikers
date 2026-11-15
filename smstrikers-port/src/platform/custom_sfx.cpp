@@ -691,16 +691,15 @@ extern "C" void PortCustomSFXStopTag(uintptr_t tag)
             v.clip = nullptr;
 }
 
-// The Super Team's pre-match intro: Extroyer_Entrada plays once for the whole intro, in place of
-// the Super Team's own entrance and attitude lines (SFXCHAR_SUPER_NIS_Enter_Home/Away_01,
-// SFXCHAR_SUPER_NIS_Attitude_01), whichever the game plays first; the rest of that intro's lines
-// stay silent. Without the clip (missing, or switched off in sonidos.txt) the game's own play.
+// The captains' pre-match face-off (attitude): Extroyer_Entrada plays in place of the Super Team's
+// own attitude line (SFXCHAR_SUPER_NIS_Attitude_01), once per face-off. Its entrance lines
+// (SFXCHAR_SUPER_NIS_Enter_*) are left alone. Without the clip (missing, or switched off in
+// sonidos.txt) the game's own line plays.
 static std::chrono::steady_clock::time_point g_superIntroUntil;
 
 static bool IsSuperTeamIntroLine(const std::string& name)
 {
-    return name.compare(0, 23, "SFXCHAR_SUPER_NIS_Enter") == 0 ||
-           name.compare(0, 26, "SFXCHAR_SUPER_NIS_Attitude") == 0;
+    return name.compare(0, 26, "SFXCHAR_SUPER_NIS_Attitude") == 0;
 }
 
 extern "C" int PortCustomSFXSuperTeamIntro(void)

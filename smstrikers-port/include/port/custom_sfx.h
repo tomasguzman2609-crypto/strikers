@@ -60,9 +60,9 @@ void PortCustomSFXNamesReady(void);
 // line only sets the file and volume of that moment.
 int PortCustomSFXReplace(unsigned long sfxID);
 
-// The Super Team's pre-match intro clip, sfx/Extroyer_Entrada.wav: plays it once per intro (later
-// calls within 25 s only answer 1). Also started by PortCustomSFXReplace in place of the Super
-// Team's own entrance and attitude lines. 1 if it played (or already had), 0 if there's no clip.
+// The Super Team's clip for the captains' pre-match face-off, sfx/Extroyer_Entrada.wav: plays it
+// once (later calls within 25 s only answer 1). Started by PortCustomSFXReplace in place of the
+// Super Team's own attitude line. 1 if it played (or already had), 0 if there's no clip.
 int PortCustomSFXSuperTeamIntro(void);
 
 // A clip played like PortCustomSFXPlay, carrying `tag` (any non-zero value,

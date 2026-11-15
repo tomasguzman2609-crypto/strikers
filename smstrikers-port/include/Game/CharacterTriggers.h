@@ -37,7 +37,6 @@ void PortSuperTeamChargeStart(cFielder* pFielder);
 void PortSuperTeamChargeStop(cCharacter* pCharacter);
 void PortSuperTeamKick(cFielder* pFielder);
 void PortSuperTeamGoalCelebration(int nSide, unsigned int uNumGoalsScored);
-void PortSuperTeamIntro();
 void EmitWindupAtCharacter(cCharacter* pCharacter, const char* name);
 void EmitWindupAtBall(cCharacter* pCharacter, const char* name);
 void EmitShootToScoreHyperStrike(cFielder* pFielder);

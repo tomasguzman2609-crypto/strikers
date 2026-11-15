@@ -1665,8 +1665,8 @@ void EmitWindupAtBall(cCharacter* pCharacter, const char* name)
 //     ball), in place of the Super Team's own kick grunt.
 //   - celebracion_extroyer: as the goal celebration scene starts, for a Super Team goal that
 //     counts (not one the VAR disallowed), in place of the Super Team's own celebration line.
-//   - Extroyer_Entrada: once per pre-match intro, in place of the Super Team's own entrance and
-//     attitude lines (custom_sfx.cpp), or as its intro scene starts (NisPlayer::Play).
+//   - Extroyer_Entrada: in the pre-match face-off of the two captains, in place of the Super
+//     Team's own attitude line (that one's in custom_sfx.cpp, PortCustomSFXReplace).
 static bool PortIsSuperTeam(cCharacter* pCharacter)
 {
     return pCharacter != NULL && pCharacter->m_eCharacterClass == MYSTERY;
@@ -1715,11 +1715,6 @@ void PortSuperTeamGoalCelebration(int nSide, unsigned int uNumGoalsScored)
         bSuperTeam = PortIsSuperTeam(g_pTeams[nSide]->GetPlayer(i));
     if (bSuperTeam && PortCustomSFXPlayFixed("celebracion_extroyer"))
         PortCustomSFXMuteFor("SFXCHAR_SUPER_NIS_Goal", 10.0f);
-}
-
-void PortSuperTeamIntro()
-{
-    PortCustomSFXSuperTeamIntro();
 }
 
 /**
