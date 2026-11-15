@@ -1,3 +1,4 @@
+#include "port/custom_sfx.h"
 #include "Game/Render/Presentation.h"
 #include "Game/CharacterTriggers.h"
 #include "port/aspect.h"
@@ -321,6 +322,9 @@ void Presentation::Finish()
                 if (nlStrCmp<char>(mCurrentFunction, "GameBegin") == 0)
                 {
                     g_pGame->ChangeGameState(GS_KICKOFF);
+                    // PORT: the opening presentation is over: the Super Team's electrocution is a
+                    // match sound again (custom_sfx.cpp).
+                    PortCustomSFXSuperTeamIntroArm(0);
                 }
                 nlTaskManager::SetNextState(2);
             }

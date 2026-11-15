@@ -691,15 +691,28 @@ extern "C" void PortCustomSFXStopTag(uintptr_t tag)
             v.clip = nullptr;
 }
 
-// The captains' pre-match face-off (attitude): Extroyer_Entrada plays in place of the Super Team's
-// own attitude line (SFXCHAR_SUPER_NIS_Attitude_01), once per face-off. Its entrance lines
-// (SFXCHAR_SUPER_NIS_Enter_*) are left alone. Without the clip (missing, or switched off in
-// sonidos.txt) the game's own line plays.
+// The Super Team's pre-match intro: Extroyer_Entrada plays once, in place of the Super Team's voice
+// as the beam of electricity switches it on (its electrocution line, whichever character's sound
+// the Super Team borrows for it) or its attitude line, whichever comes first; the intro's other
+// such lines stay silent. Electrocutions count only while the game has the intro armed (the
+// opening presentation of a match with the Super Team, PortCustomSFXSuperTeamIntroArm), never in
+// play. Without the clip (missing, or switched off in sonidos.txt) the game's own lines play.
 static std::chrono::steady_clock::time_point g_superIntroUntil;
+static std::chrono::steady_clock::time_point g_superIntroArmedUntil;
 
 static bool IsSuperTeamIntroLine(const std::string& name)
 {
-    return name.compare(0, 26, "SFXCHAR_SUPER_NIS_Attitude") == 0;
+    if (name.compare(0, 26, "SFXCHAR_SUPER_NIS_Attitude") == 0)
+        return true;
+    return std::chrono::steady_clock::now() < g_superIntroArmedUntil &&
+           name.compare(0, 8, "SFXCHAR_") == 0 && name.find("_EFFORTS_Electrocute") != std::string::npos;
+}
+
+extern "C" void PortCustomSFXSuperTeamIntroArm(int armed)
+{
+    // At most two minutes, in case the presentation ends some way that never disarms it.
+    g_superIntroArmedUntil = armed ? std::chrono::steady_clock::now() + std::chrono::seconds(120)
+                                   : std::chrono::steady_clock::time_point();
 }
 
 extern "C" int PortCustomSFXSuperTeamIntro(void)

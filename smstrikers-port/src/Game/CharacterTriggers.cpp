@@ -1665,8 +1665,9 @@ void EmitWindupAtBall(cCharacter* pCharacter, const char* name)
 //     ball), in place of the Super Team's own kick grunt.
 //   - celebracion_extroyer: as the goal celebration scene starts, for a Super Team goal that
 //     counts (not one the VAR disallowed), in place of the Super Team's own celebration line.
-//   - Extroyer_Entrada: in the pre-match face-off of the two captains, in place of the Super
-//     Team's own attitude line (that one's in custom_sfx.cpp, PortCustomSFXReplace).
+//   - Extroyer_Entrada: in the pre-match intro, as the beam of electricity switches the Super
+//     Team on, in place of its electrocution voice (custom_sfx.cpp, PortCustomSFXReplace; armed
+//     by cGame for the opening presentation, disarmed by Presentation at its end).
 static bool PortIsSuperTeam(cCharacter* pCharacter)
 {
     return pCharacter != NULL && pCharacter->m_eCharacterClass == MYSTERY;

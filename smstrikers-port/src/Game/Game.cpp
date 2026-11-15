@@ -2,6 +2,7 @@
 #include "Game/Sys/clock.h"
 #include "Game/Sys/eventman.h"
 #include "Game/Team.h"
+#include "port/custom_sfx.h"
 #include "Game/AI/Fielder.h"
 #include "Game/AchievementHooks.h"
 #include "Game/ChompReferee.h"
@@ -580,6 +581,13 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
     }
     else
     {
+        // PORT: the Super Team's own clip for its intro (custom_sfx.cpp), only for this opening
+        // presentation and only in a match with the Super Team in it.
+        {
+            GameInfoManager* pInfo = nlSingleton<GameInfoManager>::Instance();
+            if (pInfo->GetTeam(0) == TEAM_MYSTERY || pInfo->GetTeam(1) == TEAM_MYSTERY)
+                PortCustomSFXSuperTeamIntroArm(1);
+        }
         Presentation::Instance().Call("GameBegin", "");
     }
 
